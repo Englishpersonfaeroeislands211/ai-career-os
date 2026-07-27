@@ -337,6 +337,26 @@ Contributions welcome — especially around:
 - Batch matching (M2)
 - Documentation and DX improvements
 
+### Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <short description>
+
+[optional body explaining why]
+```
+
+Common types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci`
+
+Examples:
+
+```
+feat(matcher): add explainable match analysis with eval harness
+docs(readme): update roadmap for completed M1
+fix(api): poll match analysis until terminal status
+```
+
 1. Fork the repo
 2. Create a feature branch
 3. Run `uv run pytest` and `uv run ruff check app tests`
