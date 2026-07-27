@@ -1,5 +1,7 @@
 # AI Career OS
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **An open-source AI operating system for career management** — starting with explainable job matching, not black-box auto-apply bots.
 
 Upload a resume PDF, extract structured profile data with an LLM you control, review it, and build toward evidence-based match analysis between your experience and job descriptions.
@@ -101,7 +103,7 @@ flowchart LR
 ### 1. Clone and configure
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/semirturgay/ai-career-os.git
 cd ai-career-os
 cp .env.example .env
 ```
@@ -309,4 +311,4 @@ Please do not commit `.env` files or API keys.
 
 ## License
 
-License TBD — will be added before public release.
+[MIT](LICENSE) — Copyright (c) 2026 Semir Turğay
