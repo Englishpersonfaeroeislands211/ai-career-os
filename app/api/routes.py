@@ -1,0 +1,232 @@
+import asyncio
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.session import get_db
+from app.logging_config import get_logger
+from app.models import Job, MatchAnalysis, Profile
+from app.schemas import (
+    JobCreate,
+    JobRead,
+    JobUpdate,
+    MatchAnalysisCreate,
+    MatchAnalysisRead,
+    ProfileCreate,
+    ProfileRead,
+    ProfileUpdate,
+    ResumeParseRead,
+)
+from app.services.llm.base import LLMConfigurationError, LLMError
+from app.services.resume_parser import ResumeParseError, extract_text_from_pdf
+from app.services.resume_structurer import structure_resume
+
+logger = get_logger(__name__)
+
+router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Profiles
+# ---------------------------------------------------------------------------
+
+
+@router.post("/profiles", response_model=ProfileRead, status_code=status.HTTP_201_CREATED)
+async def create_profile(body: ProfileCreate, db: AsyncSession = Depends(get_db)):
+    profile = Profile(**body.model_dump())
+    db.add(profile)
+    await db.commit()
+    await db.refresh(profile)
+    return profile
+
+
+@router.get("/profiles", response_model=list[ProfileRead])
+async def list_profiles(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Profile).order_by(Profile.created_at.desc()))
+    return result.scalars().all()
+
+
+@router.post("/profiles/parse-resume", response_model=ResumeParseRead)
+async def parse_resume(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    filename = file.filename or "upload.pdf"
+    content_type = file.content_type or "unknown"
+    logger.info("Parsing resume upload: %s (%s)", filename, content_type)
+
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    if not content.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="File does not appear to be a valid PDF")
+
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File must be under 10 MB")
+
+    logger.info("Extracting text from %s (%.1f KB)", filename, len(content) / 1024)
+
+    try:
+        resume_text = await asyncio.to_thread(extract_text_from_pdf, content)
+    except ResumeParseError as exc:
+        logger.warning("Resume parse failed for %s: %s", filename, exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    logger.info("Structuring resume from %s (%d chars)", filename, len(resume_text))
+
+    try:
+        extraction = await structure_resume(db, resume_text)
+    except LLMConfigurationError as exc:
+        logger.warning("Resume structuring skipped — provider not configured: %s", exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LLMError as exc:
+        logger.error("Resume structuring failed for %s: %s", filename, exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    logger.info(
+        "Structured %s — name=%r, skills=%d, experience=%d",
+        filename,
+        extraction.name,
+        len(extraction.skills),
+        len(extraction.experience),
+    )
+    return ResumeParseRead(
+        name=extraction.name,
+        headline=extraction.headline,
+        resume_text=resume_text,
+        structured_data=extraction,
+    )
+
+
+@router.get("/profiles/{profile_id}", response_model=ProfileRead)
+async def get_profile(profile_id: UUID, db: AsyncSession = Depends(get_db)):
+    profile = await db.get(Profile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return profile
+
+
+@router.patch("/profiles/{profile_id}", response_model=ProfileRead)
+async def update_profile(
+    profile_id: UUID, body: ProfileUpdate, db: AsyncSession = Depends(get_db)
+):
+    profile = await db.get(Profile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(profile, field, value)
+
+    await db.commit()
+    await db.refresh(profile)
+    return profile
+
+
+@router.delete("/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_profile(profile_id: UUID, db: AsyncSession = Depends(get_db)):
+    profile = await db.get(Profile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    await db.delete(profile)
+    await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
+
+
+@router.post("/jobs", response_model=JobRead, status_code=status.HTTP_201_CREATED)
+async def create_job(body: JobCreate, db: AsyncSession = Depends(get_db)):
+    job = Job(**body.model_dump())
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
+    return job
+
+
+@router.get("/jobs", response_model=list[JobRead])
+async def list_jobs(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Job).order_by(Job.created_at.desc()))
+    return result.scalars().all()
+
+
+@router.get("/jobs/{job_id}", response_model=JobRead)
+async def get_job(job_id: UUID, db: AsyncSession = Depends(get_db)):
+    job = await db.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@router.patch("/jobs/{job_id}", response_model=JobRead)
+async def update_job(job_id: UUID, body: JobUpdate, db: AsyncSession = Depends(get_db)):
+    job = await db.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(job, field, value)
+
+    await db.commit()
+    await db.refresh(job)
+    return job
+
+
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(job_id: UUID, db: AsyncSession = Depends(get_db)):
+    job = await db.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    await db.delete(job)
+    await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Match Analyses
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/match-analyses",
+    response_model=MatchAnalysisRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_match_analysis(body: MatchAnalysisCreate, db: AsyncSession = Depends(get_db)):
+    profile = await db.get(Profile, body.profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    job = await db.get(Job, body.job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    analysis = MatchAnalysis(
+        profile_id=body.profile_id,
+        job_id=body.job_id,
+        status="pending",
+    )
+    db.add(analysis)
+    await db.commit()
+    await db.refresh(analysis)
+    return analysis
+
+
+@router.get("/match-analyses", response_model=list[MatchAnalysisRead])
+async def list_match_analyses(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(MatchAnalysis).order_by(MatchAnalysis.created_at.desc()))
+    return result.scalars().all()
+
+
+@router.get("/match-analyses/{analysis_id}", response_model=MatchAnalysisRead)
+async def get_match_analysis(analysis_id: UUID, db: AsyncSession = Depends(get_db)):
+    analysis = await db.get(MatchAnalysis, analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Match analysis not found")
+    return analysis
