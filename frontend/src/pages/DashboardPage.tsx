@@ -43,6 +43,31 @@ export function DashboardPage() {
     load();
   }, [navigate]);
 
+  useEffect(() => {
+    if (!currentAnalysis || currentAnalysis.status !== "pending") return;
+
+    let cancelled = false;
+
+    async function poll() {
+      try {
+        const updated = await api.matchAnalyses.get(currentAnalysis.id);
+        if (cancelled) return;
+        setCurrentAnalysis(updated);
+        setHistory((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    const interval = window.setInterval(poll, 2000);
+    poll();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [currentAnalysis?.id, currentAnalysis?.status]);
+
   async function handleAnalyze() {
     if (!profile || !jobId) return;
     setAnalyzing(true);

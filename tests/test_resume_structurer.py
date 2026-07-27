@@ -23,7 +23,7 @@ async def test_structure_resume_calls_llm_client():
         ],
     )
     mock_client = AsyncMock()
-    mock_client.complete_structured.return_value = extraction
+    mock_client.generate_structured.return_value = extraction
 
     with patch(
         "app.services.resume_structurer.get_llm_client",
@@ -32,7 +32,7 @@ async def test_structure_resume_calls_llm_client():
         result = await structure_resume(db=None, resume_text="Jane Doe\nBackend Engineer")
 
     assert result.name == "Jane Doe"
-    mock_client.complete_structured.assert_awaited_once()
+    mock_client.generate_structured.assert_awaited_once()
 
 
 @pytest.mark.asyncio

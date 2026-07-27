@@ -7,14 +7,17 @@ interface MatchResultPanelProps {
   jobTitle?: string;
 }
 
-const recommendationLabels: Record<string, { label: string; variant: "success" | "warning" | "danger" }> = {
+const recommendationLabels: Record<
+  MatchResult["recommendation"],
+  { label: string; variant: "success" | "warning" | "danger" }
+> = {
   apply: { label: "Apply", variant: "success" },
-  maybe: { label: "Maybe", variant: "warning" },
-  skip: { label: "Skip", variant: "danger" },
+  "maybe apply": { label: "Maybe", variant: "warning" },
+  "do not apply": { label: "Skip", variant: "danger" },
 };
 
 function ScoreRing({ score }: { score: number }) {
-  const pct = Math.round(score * 100);
+  const pct = Math.round(score);
   const color =
     pct >= 70 ? "text-success" : pct >= 40 ? "text-warning" : "text-danger";
 
@@ -26,26 +29,28 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+function severityVariant(severity: MatchResult["gaps"][number]["severity"]) {
+  if (severity === "high") return "danger";
+  if (severity === "medium") return "warning";
+  return "info";
+}
+
 function ResultContent({ result }: { result: MatchResult }) {
-  const rec = result.recommendation
-    ? recommendationLabels[result.recommendation]
-    : null;
+  const rec = recommendationLabels[result.recommendation];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-6">
-        {result.match_score != null && <ScoreRing score={result.match_score} />}
-        {rec && <Badge variant={rec.variant}>{rec.label}</Badge>}
+        <ScoreRing score={result.score} />
+        <Badge variant={rec.variant}>{rec.label}</Badge>
       </div>
 
-      {result.summary && (
-        <div>
-          <h3 className="mb-2 text-sm font-medium text-text-muted">Summary</h3>
-          <p className="text-sm leading-relaxed text-text">{result.summary}</p>
-        </div>
-      )}
+      <div>
+        <h3 className="mb-2 text-sm font-medium text-text-muted">Summary</h3>
+        <p className="text-sm leading-relaxed text-text">{result.summary}</p>
+      </div>
 
-      {result.strengths && result.strengths.length > 0 && (
+      {result.strengths.length > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-medium text-success">Strengths</h3>
           <ul className="space-y-3">
@@ -54,19 +59,17 @@ function ResultContent({ result }: { result: MatchResult }) {
                 key={i}
                 className="rounded-lg border border-success/20 bg-success/5 px-4 py-3"
               >
-                <p className="text-sm font-medium text-text">{s.point}</p>
-                {s.evidence && (
-                  <p className="mt-1 text-xs text-text-muted italic">
-                    &ldquo;{s.evidence}&rdquo;
-                  </p>
-                )}
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm text-text">{s.evidence}</p>
+                  <Badge variant="success">{s.point.toFixed(1)}/10</Badge>
+                </div>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {result.gaps && result.gaps.length > 0 && (
+      {result.gaps.length > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-medium text-warning">Gaps</h3>
           <ul className="space-y-3">
@@ -76,10 +79,11 @@ function ResultContent({ result }: { result: MatchResult }) {
                 className="rounded-lg border border-warning/20 bg-warning/5 px-4 py-3"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm text-text">{g.point}</p>
-                  <Badge variant={g.severity === "blocker" ? "danger" : "warning"}>
-                    {g.severity}
-                  </Badge>
+                  <p className="text-sm text-text">{g.evidence}</p>
+                  <div className="flex shrink-0 gap-2">
+                    <Badge variant={severityVariant(g.severity)}>{g.severity}</Badge>
+                    <Badge variant="warning">{g.point.toFixed(1)}/10</Badge>
+                  </div>
                 </div>
               </li>
             ))}
@@ -94,12 +98,10 @@ function PendingState() {
   return (
     <div className="flex flex-col items-center gap-3 py-8 text-center">
       <div className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-      <p className="text-sm text-text-muted">
-        Analysis pending — the AI matcher isn&apos;t wired yet.
-      </p>
+      <p className="text-sm text-text-muted">Analyzing match…</p>
       <p className="max-w-sm text-xs text-text-muted">
-        Once the matcher service lands, results will appear here with score, strengths, gaps, and
-        evidence.
+        The AI matcher is comparing your profile against the job description. Results usually
+        appear within a few seconds.
       </p>
     </div>
   );

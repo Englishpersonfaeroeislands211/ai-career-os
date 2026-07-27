@@ -70,21 +70,22 @@ export interface MatchAnalysis {
 }
 
 export interface MatchStrength {
-  point: string;
+  point: number;
   evidence: string;
 }
 
 export interface MatchGap {
-  point: string;
-  severity: "blocker" | "minor";
+  point: number;
+  severity: "low" | "medium" | "high";
+  evidence: string;
 }
 
 export interface MatchResult {
-  match_score?: number;
-  recommendation?: "apply" | "maybe" | "skip";
-  strengths?: MatchStrength[];
-  gaps?: MatchGap[];
-  summary?: string;
+  score: number;
+  recommendation: "apply" | "maybe apply" | "do not apply";
+  strengths: MatchStrength[];
+  gaps: MatchGap[];
+  summary: string;
 }
 
 export interface ProfileCreate {

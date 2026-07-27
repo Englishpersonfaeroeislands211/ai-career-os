@@ -8,7 +8,7 @@ from app.services.resume_extraction_normalize import normalize_resume_payload
 
 async def structure_resume(db: AsyncSession, resume_text: str) -> ResumeExtraction:
     client = await get_llm_client(db)
-    return await client.complete_structured(
+    return await client.generate_structured(
         messages=[
             Message(role="system", content=load_prompt("resume_extraction")),
             Message(role="user", content=f"Resume text:\n\n{resume_text}"),

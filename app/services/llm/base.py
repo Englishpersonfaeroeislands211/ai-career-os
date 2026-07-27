@@ -24,7 +24,7 @@ class LLMConfigurationError(LLMError):
 
 
 class LLMClient(Protocol):
-    async def complete_structured(
+    async def generate_structured(
         self,
         messages: list[Message],
         response_model: type[T],

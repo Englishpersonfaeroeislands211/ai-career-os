@@ -47,7 +47,7 @@ async def test_structure_resume_pipeline_with_mocked_llm(case_name: str, case_di
 
     golden = ResumeExtraction.model_validate(normalize_resume_payload(llm_response))
     mock_client = AsyncMock()
-    mock_client.complete_structured.return_value = golden
+    mock_client.generate_structured.return_value = golden
 
     with patch(
         "app.services.resume_structurer.get_llm_client",
@@ -55,8 +55,8 @@ async def test_structure_resume_pipeline_with_mocked_llm(case_name: str, case_di
     ):
         extraction = await structure_resume(db=None, resume_text=resume_text)
 
-    mock_client.complete_structured.assert_awaited_once()
-    call_kwargs = mock_client.complete_structured.await_args.kwargs
+    mock_client.generate_structured.assert_awaited_once()
+    call_kwargs = mock_client.generate_structured.await_args.kwargs
     assert call_kwargs["response_model"] is ResumeExtraction
     assert resume_text in call_kwargs["messages"][-1].content
 

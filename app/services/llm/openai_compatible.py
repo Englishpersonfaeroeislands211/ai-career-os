@@ -39,7 +39,7 @@ class OpenAICompatibleClient:
         self._http_client = http_client
         self._owns_client = http_client is None
 
-    async def complete_structured(
+    async def generate_structured(
         self,
         messages: list[Message],
         response_model: type[T],

@@ -1,7 +1,7 @@
 import asyncio
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from app.schemas import (
     ResumeParseRead,
 )
 from app.services.llm.base import LLMConfigurationError, LLMError
+from app.services.matcher import run_match_analysis
 from app.services.resume_parser import ResumeParseError, extract_text_from_pdf
 from app.services.resume_structurer import structure_resume
 
@@ -196,7 +197,11 @@ async def delete_job(job_id: UUID, db: AsyncSession = Depends(get_db)):
     response_model=MatchAnalysisRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_match_analysis(body: MatchAnalysisCreate, db: AsyncSession = Depends(get_db)):
+async def create_match_analysis(
+    body: MatchAnalysisCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     profile = await db.get(Profile, body.profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -213,6 +218,9 @@ async def create_match_analysis(body: MatchAnalysisCreate, db: AsyncSession = De
     db.add(analysis)
     await db.commit()
     await db.refresh(analysis)
+
+    background_tasks.add_task(run_match_analysis, analysis.id)
+    logger.info("Queued match analysis %s for profile=%s job=%s", analysis.id, profile.id, job.id)
     return analysis
 
 

@@ -34,7 +34,7 @@ def _resume_payload() -> dict:
 
 
 @pytest.mark.asyncio
-async def test_complete_structured_parses_openai_compatible_response():
+async def test_generate_structured_parses_openai_compatible_response():
     captured: dict = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -62,7 +62,7 @@ async def test_complete_structured_parses_openai_compatible_response():
             ),
             http_client=http_client,
         )
-        result = await client.complete_structured(
+        result = await client.generate_structured(
             messages=[Message(role="user", content="Extract resume fields.")],
             response_model=ResumeExtraction,
         )
