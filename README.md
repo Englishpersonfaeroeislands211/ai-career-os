@@ -1,6 +1,6 @@
 # AI Career OS
 
-[![CI](https://github.com/semirturgay/ai-career-os/actions/workflows/ci.yml/badge.svg)](https://github.com/semirturgay/ai-career-os/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/semirturgay/ai-career-os/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white)](https://github.com/semirturgay/ai-career-os/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **An open-source AI operating system for career management** — starting with explainable job matching, not black-box auto-apply bots.
