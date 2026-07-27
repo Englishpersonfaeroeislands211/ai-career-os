@@ -24,9 +24,7 @@ def extract_text_from_pdf(content: bytes) -> str:
 
     resume_text = "\n\n".join(pages).strip()
     if not resume_text:
-        raise ResumeParseError(
-            "No text could be extracted. The PDF may be scanned/image-only."
-        )
+        raise ResumeParseError("No text could be extracted. The PDF may be scanned/image-only.")
 
     return resume_text
 

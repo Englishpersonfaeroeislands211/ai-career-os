@@ -1,0 +1,36 @@
+{
+  "name": "Alex Chen",
+  "contact": {
+    "email": "alex.chen@example.dev",
+    "phone": "+44 7700 900123"
+  },
+  "skills_top": ["Kubernetes", "Go", "AWS"],
+  "skills_general": ["Terraform", "gRPC", "PostgreSQL"],
+  "summary": "Platform engineer focused on Kubernetes and cloud infrastructure.",
+  "experience_items": [
+    {
+      "title": "Staff Platform Engineer",
+      "company": "Nimbus Labs",
+      "duration": "March 2021 - Present",
+      "highlights": [
+        "Operated multi-region Kubernetes clusters for data pipelines."
+      ]
+    },
+    {
+      "title": "DevOps Engineer",
+      "company": "Orbit Systems",
+      "duration": "August 2017 - February 2021",
+      "highlights": [
+        "Managed AWS infrastructure with Terraform."
+      ]
+    }
+  ],
+  "education_items": [
+    {
+      "degree": "MEng Software Engineering",
+      "school": "Tech Institute London",
+      "duration": "2013 - 2017"
+    }
+  ],
+  "projects_items": []
+}

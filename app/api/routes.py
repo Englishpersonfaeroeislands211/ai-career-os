@@ -113,9 +113,7 @@ async def get_profile(profile_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/profiles/{profile_id}", response_model=ProfileRead)
-async def update_profile(
-    profile_id: UUID, body: ProfileUpdate, db: AsyncSession = Depends(get_db)
-):
+async def update_profile(profile_id: UUID, body: ProfileUpdate, db: AsyncSession = Depends(get_db)):
     profile = await db.get(Profile, profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")

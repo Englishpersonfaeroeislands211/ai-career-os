@@ -23,6 +23,7 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "httpx>=0.28.0",
     "ruff>=0.8.0",
+    "pre-commit>=4.0.0",
 ]
 
 [tool.uv]
@@ -32,10 +33,26 @@ package = false
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "live_llm: optional eval that calls a real configured LLM provider",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear (common footguns)
+]
+per-file-ignores = { "scripts/*" = ["E402"] }
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Query"]

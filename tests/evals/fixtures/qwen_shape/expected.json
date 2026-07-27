@@ -1,0 +1,10 @@
+{
+  "name_contains": "Alex",
+  "name_not": ["Contact", "Unknown"],
+  "min_skills": 4,
+  "must_include_skills": ["Kubernetes", "Go", "Terraform"],
+  "min_experience": 2,
+  "experience_companies_contain": ["Nimbus"],
+  "min_education": 1,
+  "email_contains": "@example.dev"
+}

@@ -1,0 +1,45 @@
+Jane Doe
+Senior Backend Engineer | Python, FastAPI, PostgreSQL
+
+jane.doe@example.com
++1 555 010 2000
+
+Skills
+Python
+FastAPI
+PostgreSQL
+Docker
+REST APIs
+
+Summary
+Backend engineer with 8 years building APIs and data services for product teams.
+
+Experience
+
+Acme Corp
+Senior Backend Engineer
+January 2020 - Present
+San Francisco, CA
+
+- Designed REST and GraphQL APIs serving 2M daily requests.
+- Led migration from monolith to FastAPI microservices.
+- Improved p95 latency by 40% through query optimization.
+
+Globex Inc
+Software Engineer
+June 2016 - December 2019
+Remote
+
+- Built internal tooling in Python and PostgreSQL.
+- Introduced CI/CD pipelines with GitHub Actions.
+
+Education
+
+State University
+B.S. Computer Science
+2012 - 2016
+
+Projects
+
+Career Tracker CLI
+Personal open-source CLI for tracking job applications.

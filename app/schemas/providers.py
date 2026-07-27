@@ -132,9 +132,7 @@ PROVIDER_REGISTRY: dict[LLMProvider, ProviderMeta] = {
     ),
 }
 
-DEFAULT_MODELS: dict[LLMProvider, str] = {
-    k: v.default_model for k, v in PROVIDER_REGISTRY.items()
-}
+DEFAULT_MODELS: dict[LLMProvider, str] = {k: v.default_model for k, v in PROVIDER_REGISTRY.items()}
 DEFAULT_BASE_URLS: dict[LLMProvider, str | None] = {
     k: v.default_base_url for k, v in PROVIDER_REGISTRY.items()
 }

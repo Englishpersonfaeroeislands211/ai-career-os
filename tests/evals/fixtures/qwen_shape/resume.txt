@@ -1,0 +1,37 @@
+Alex Chen
+Platform Engineer | Go, Kubernetes, AWS
+
+alex.chen@example.dev
++44 7700 900123
+
+Top Skills
+Kubernetes
+Go
+AWS
+
+Skills
+Terraform
+gRPC
+PostgreSQL
+
+Experience
+
+Nimbus Labs
+Staff Platform Engineer
+March 2021 - Present
+
+- Operated multi-region Kubernetes clusters for data pipelines.
+- Built internal developer platform with Go microservices.
+
+Orbit Systems
+DevOps Engineer
+August 2017 - February 2021
+
+- Managed AWS infrastructure with Terraform.
+- Reduced deployment time with GitOps workflows.
+
+Education
+
+Tech Institute London
+MEng Software Engineering
+2013 - 2017

@@ -66,9 +66,7 @@ class OpenAICompatibleClient:
                 await client.aclose()
 
         if response.status_code >= 400:
-            raise LLMError(
-                f"Provider returned {response.status_code}: {response.text[:300]}"
-            )
+            raise LLMError(f"Provider returned {response.status_code}: {response.text[:300]}")
 
         content = self._extract_message_content(response.json())
         return self._parse_structured_response(

@@ -1,5 +1,6 @@
 # AI Career OS
 
+[![CI](https://github.com/semirturgay/ai-career-os/actions/workflows/ci.yml/badge.svg)](https://github.com/semirturgay/ai-career-os/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **An open-source AI operating system for career management** — starting with explainable job matching, not black-box auto-apply bots.
@@ -195,11 +196,34 @@ Local models may return JSON with non-standard field names — the backend norma
 uv run pytest
 ```
 
-### Lint
+Resume extraction eval fixtures live in `tests/evals/fixtures/`. CI runs golden-response
+checks on every push; optional live LLM evals require a configured provider and Postgres:
 
 ```bash
-uv run ruff check app tests
-uv run ruff format app tests
+RUN_LIVE_LLM=1 uv run pytest -m live_llm
+# or
+RUN_LIVE_LLM=1 uv run python scripts/eval_resume_extraction.py
+```
+
+### Lint
+
+Fast Python linting with [Ruff](https://docs.astral.sh/ruff/) — covers pyflakes, isort import
+sorting, pyupgrade, and bugbear in one tool (no separate pylint/isort install needed):
+
+```bash
+uv run ruff check app tests scripts alembic
+uv run ruff format app tests scripts alembic          # auto-fix formatting
+uv run ruff format --check app tests scripts alembic  # CI mode
+```
+
+### Pre-commit
+
+Install git hooks to run ruff + tests before each commit:
+
+```bash
+uv sync
+uv run pre-commit install
+uv run pre-commit run --all-files   # verify setup
 ```
 
 ### Frontend build
