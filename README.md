@@ -5,7 +5,7 @@
 
 **An open-source AI operating system for career management** — starting with explainable job matching, not black-box auto-apply bots.
 
-Upload a resume PDF, extract structured profile data with an LLM you control, review it, and build toward evidence-based match analysis between your experience and job descriptions.
+Upload a resume PDF, extract structured profile data with an LLM you control, review it, then run **explainable match analysis** against job descriptions — score, strengths, gaps, and evidence-backed recommendations.
 
 ---
 
@@ -49,8 +49,10 @@ Long-term vision: an autonomous career assistant that discovers jobs, explains f
 - **Bring your own model** — OpenAI, Anthropic, Groq, Mistral, Together, Azure OpenAI, or **local** (Ollama / LM Studio)
 - **Model picker** — fetches available models from your provider
 - **Human review** — edit extracted fields before saving
-- **Match analysis scaffold** — profile ↔ job linking (AI matcher coming in M1)
+- **Explainable match analysis** — LLM compares profile ↔ job with score, strengths, gaps, and evidence
+- **Async matching** — background task + dashboard polling (non-blocking API)
 - **Version-controlled prompts** — prompts live in `app/prompts/`, not buried in code
+- **Eval harness** — golden fixtures for resume extraction and match analysis regression tests
 
 ---
 
@@ -64,14 +66,17 @@ flowchart LR
     D --> E[(Profile + structured_data)]
     E --> F[Match analysis]
     J[Job description] --> F
-    F --> G[LLM match result]
+    F --> G[MatchResult JSON]
+    G --> H[Dashboard: score, strengths, gaps]
 ```
 
 1. **Extract text** from PDF (no LLM — fast, deterministic)
 2. **Structure** with your configured LLM using a JSON schema (`ResumeExtraction`)
 3. **Review** on the onboarding screen — fix anything the model got wrong
 4. **Save** profile with raw text + structured JSONB snapshot
-5. **Match** (next milestone) — compare profile against jobs with explainable output
+5. **Add a job** on the dashboard — paste a job description
+6. **Analyze match** — LLM returns structured `MatchResult` (score 0–100, recommendation, strengths/gaps with evidence, summary)
+7. **Review results** — dashboard polls until analysis completes
 
 ---
 
@@ -142,6 +147,8 @@ App: http://127.0.0.1:5173
 2. Upload a PDF resume
 3. Wait for extraction (local models can take 30–60s)
 4. Review structured fields → save profile
+5. On the dashboard, add a job description → click **Analyze match**
+6. Wait for the matcher (usually a few seconds with local models)
 
 > **Note:** Use `127.0.0.1` instead of `localhost` for API URLs on macOS — the Vite proxy and DB URL are configured this way to avoid IPv6 hangs.
 
@@ -196,12 +203,13 @@ Local models may return JSON with non-standard field names — the backend norma
 uv run pytest
 ```
 
-Resume extraction eval fixtures live in `tests/evals/fixtures/`. CI runs golden-response
-checks on every push; optional live LLM evals require a configured provider and Postgres:
+Eval fixtures live in `tests/evals/fixtures/` (resume extraction + match analysis). CI runs
+golden-response checks on every push; optional live LLM evals require a configured provider
+and Postgres:
 
 ```bash
 RUN_LIVE_LLM=1 uv run pytest -m live_llm
-# or
+# or resume-only:
 RUN_LIVE_LLM=1 uv run python scripts/eval_resume_extraction.py
 ```
 
@@ -249,11 +257,13 @@ ai-career-os/
 │   ├── db/               # SQLAlchemy session
 │   ├── models/           # ORM models
 │   ├── prompts/          # Version-controlled LLM prompts (.txt)
-│   ├── schemas/          # Pydantic models (API + ResumeExtraction)
+│   ├── schemas/          # Pydantic models (API + ResumeExtraction + MatchResult)
 │   └── services/
-│       ├── llm/          # Provider abstraction + structured output client
+│       ├── llm/          # Provider abstraction + generate_structured() client
 │       ├── resume_parser.py
-│       └── resume_structurer.py
+│       ├── resume_structurer.py
+│       ├── matcher.py
+│       └── match_analysis_normalize.py
 ├── alembic/              # Database migrations (single init migration)
 ├── frontend/             # Vite + React SPA
 ├── docs/                 # Architecture, milestones, vision
@@ -276,7 +286,8 @@ Base path: `/api/v1`
 | DELETE | `/profiles/{id}` | Delete profile |
 | POST | `/jobs` | Create job |
 | GET | `/jobs` | List jobs |
-| POST | `/match-analyses` | Create match analysis (pending) |
+| POST | `/match-analyses` | Create match analysis (runs LLM matcher in background) |
+| GET | `/match-analyses/{id}` | Get analysis status + result |
 | GET | `/match-analyses` | List analyses |
 | GET | `/settings` | Get LLM provider config |
 | PUT | `/settings` | Update LLM provider config |
@@ -292,8 +303,9 @@ Full interactive docs: http://127.0.0.1:8000/docs
 | Milestone | Status | Description |
 |-----------|--------|-------------|
 | **M0** Resume extraction | Done | PDF → LLM structured output → review → save |
-| **M1** Explain the match | Next | LLM match analysis with evidence (`MatchAnalysis.result`) |
-| **M2+** | Planned | Eval harness, job discovery, interview prep |
+| **M1** Explain the match | Done | Evidence-based match analysis with eval harness |
+| **M2** Batch matching + scoring | Next | Match one profile against many jobs |
+| **M3+** | Planned | Resume optimization, cover letters, RAG, job discovery |
 
 Details: [docs/milestones/](docs/milestones/README.md)
 
@@ -311,7 +323,8 @@ Details: [docs/milestones/](docs/milestones/README.md)
 |-----|----------|
 | [docs/vision.md](docs/vision.md) | Long-term product vision |
 | [docs/architecture.md](docs/architecture.md) | System design and data model |
-| [docs/milestones/m1-explain-the-match.md](docs/milestones/m1-explain-the-match.md) | Next milestone spec |
+| [docs/milestones/m1-explain-the-match.md](docs/milestones/m1-explain-the-match.md) | M1 spec (completed) |
+| [docs/milestones/README.md](docs/milestones/README.md) | Full roadmap |
 
 ---
 
@@ -320,8 +333,8 @@ Details: [docs/milestones/](docs/milestones/README.md)
 Contributions welcome — especially around:
 
 - LLM provider adapters (Anthropic native structured output, Google Gemini)
-- Extraction quality and eval fixtures (sample resumes + expected fields)
-- Match analysis implementation (M1)
+- Extraction and match quality — eval fixtures (sample resumes/jobs + expected fields)
+- Batch matching (M2)
 - Documentation and DX improvements
 
 1. Fork the repo
