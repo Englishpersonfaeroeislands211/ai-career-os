@@ -90,6 +90,7 @@ Golden fixtures under `tests/evals/fixtures/` decouple **prompt/schema iteration
 | Job extraction | `greenhouse_backend` | `job_eval_assertions.py` |
 | Match analysis | `senior_python_backend` | `match_eval_assertions.py` |
 | Resume optimization | `senior_python_backend` | `resume_optimization_eval_assertions.py` |
+| Cover letter | `senior_python_backend` | `cover_letter_eval_assertions.py` |
 
 Each case contains:
 

@@ -41,7 +41,7 @@ flowchart LR
 | Resume optimization (gap → suggestions → apply) | Done |
 | Cover letter (draft → critique → revise) | Done |
 | Home job pipeline with polling | Done |
-| Eval harness (4 suites: resume, job, match, optimization) | Done |
+| Eval harness (5 suites: resume, job, match, optimization, cover letter) | Done |
 | LLM call tracing (latency, tokens, operation) | Done |
 | Screening card + `match_summary` at job extract | Done |
 

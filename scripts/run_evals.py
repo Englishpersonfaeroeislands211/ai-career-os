@@ -22,6 +22,7 @@ EVAL_SUITES: dict[str, str] = {
     "job_extraction": "tests/evals/test_job_extraction_eval.py",
     "match_analysis": "tests/evals/test_match_analysis_eval.py",
     "resume_optimization": "tests/evals/test_resume_optimization_eval.py",
+    "cover_letter": "tests/evals/test_cover_letter_eval.py",
 }
 
 
