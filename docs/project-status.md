@@ -6,7 +6,7 @@ Last updated: 2026-07-28
 
 AI Career OS has a working **resume → job → explainable match** loop. The product is intentionally narrow: paste your data, get evidence-backed fit analysis — no black-box auto-apply.
 
-**Current milestone:** M3 complete. **Next:** M4 — resume optimization.
+**Current milestone:** M4 complete. **Next:** M5 — cover letter generation.
 
 ## Product flow (today)
 
@@ -35,10 +35,11 @@ flowchart LR
 | Resume PDF extraction + structured `ResumeExtraction` | Done |
 | Profile CRUD + settings (BYOM: cloud + local) | Done |
 | Job paste → `JobExtraction` + review UI | Done |
-| Explainable match (`MatchResult`: score, strengths, gaps, evidence) | Done |
-| Match on job create (`profile_id` → background analysis) | Done |
+| Explainable match + match on job insert | Done |
+| Resume optimization (gap → suggestions → apply) | Done |
 | Home job pipeline with polling | Done |
-| Eval harness (resume, job extraction, match analysis fixtures) | Done |
+| Eval harness (4 suites: resume, job, match, optimization) | Done |
+| LLM call tracing (latency, tokens, operation) | Done |
 | Screening card + `match_summary` at job extract | Done (infra for future cost optimization) |
 
 ## API surface (`/api/v1/`)
@@ -61,16 +62,15 @@ We briefly shipped **bulk batch matching** (one comparative LLM call for many jo
 
 See [M3: Match on job insert](milestones/m3-match-on-intake.md) and [M3 batch (archived)](milestones/m3-batch-matching.md).
 
-## What's next (M4+)
+## What's next (M5+)
 
 | Priority | Milestone | Why |
 |----------|-----------|-----|
-| **Next** | [M4 — Resume optimization](milestones/README.md#m4-resume-optimization) | Close gaps surfaced by match analysis; first “action” beyond scoring |
+| **Next** | [M5 — Cover letter generation](milestones/README.md) | Personalized outreach from match narrative |
 | Soon | Re-analyze on job update | JD edits should refresh match without manual retry |
-| Soon | Match-at-intake eval fixtures | Regression tests for the primary user path |
-| Later | Cover letter generation (M5) | Needs stable match + gap narrative |
+| Soon | Eval fixtures | Match-at-intake + resume optimization regression tests |
 | Later | Job discovery (M7) | Official APIs only — no scraping |
-| Cleanup | Prune unused batch/cascade backend | After evals cover match-on-intake |
+| Cleanup | Prune unused batch/cascade backend | After evals cover primary paths |
 
 ## Intentionally deferred
 

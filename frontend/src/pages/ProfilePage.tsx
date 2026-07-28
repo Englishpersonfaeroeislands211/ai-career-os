@@ -5,12 +5,15 @@ import { Layout } from "../components/Layout";
 import { parseStructuredData, StructuredProfileView } from "../components/StructuredProfileView";
 import { ResumeUploadZone } from "../components/ResumeUploadZone";
 import { useActiveProfile } from "../hooks/useActiveProfile";
-import { Button } from "../components/ui";
+import { api } from "../api/client";
+import { Button, ErrorBanner } from "../components/ui";
 
 export function ProfilePage() {
   const navigate = useNavigate();
   const { profile, loading, requireProfile } = useActiveProfile();
   const [showUpload, setShowUpload] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !profile) requireProfile();
@@ -28,6 +31,19 @@ export function ProfilePage() {
     });
   }
 
+  async function handleDownloadPdf() {
+    if (!profile) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      await api.profiles.downloadResumePdf(profile.id);
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Failed to download resume PDF");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   if (loading || !profile) {
     return (
       <Layout subtitle="Profile">
@@ -43,6 +59,8 @@ export function ProfilePage() {
   return (
     <Layout subtitle="Your career profile">
       <main className="mx-auto max-w-3xl space-y-8 px-6 py-8">
+        {downloadError && <ErrorBanner message={downloadError} />}
+
         <section className="rounded-2xl border border-border bg-surface-raised p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -55,9 +73,14 @@ export function ProfilePage() {
                 Updated {new Date(profile.updated_at).toLocaleDateString()}
               </p>
             </div>
-            <Button variant="secondary" onClick={() => setShowUpload((v) => !v)}>
-              {showUpload ? "Cancel upload" : "Upload new resume"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={handleDownloadPdf} loading={downloading}>
+                Download PDF
+              </Button>
+              <Button variant="secondary" onClick={() => setShowUpload((v) => !v)}>
+                {showUpload ? "Cancel upload" : "Upload new resume"}
+              </Button>
+            </div>
           </div>
         </section>
 

@@ -53,6 +53,8 @@ Long-term vision: an autonomous career assistant that discovers jobs, explains f
 - **Match on save** — full detailed analysis runs automatically when you add a job
 - **Job pipeline** — home dashboard ranks jobs by match score with polling
 - **Explainable match analysis** — LLM compares profile ↔ job with score, strengths, gaps, and evidence
+- **Resume optimization** — gap-driven rewrite suggestions from job detail, apply to profile
+- **Export resume PDF** — download your profile as a formatted PDF from the profile page
 - **Re-analyze** — manual retry on job detail when profile or job changes
 - **Version-controlled prompts** — prompts live in `app/prompts/`, not buried in code
 - **Eval harness** — golden fixtures for resume extraction and match analysis regression tests
@@ -207,15 +209,17 @@ Local models may return JSON with non-standard field names — the backend norma
 uv run pytest
 ```
 
-Eval fixtures live in `tests/evals/fixtures/` (resume extraction + match analysis). CI runs
-golden-response checks on every push; optional live LLM evals require a configured provider
-and Postgres:
+Eval fixtures live in `tests/evals/fixtures/` (resume extraction, job extraction, match analysis, resume optimization). CI runs golden-response checks on every push.
 
 ```bash
-RUN_LIVE_LLM=1 uv run pytest -m live_llm
-# or resume-only:
-RUN_LIVE_LLM=1 uv run python scripts/eval_resume_extraction.py
+# Offline golden evals (no API key)
+uv run python scripts/run_evals.py
+
+# Optional live LLM evals (configured provider + Postgres)
+RUN_LIVE_LLM=1 uv run python scripts/run_evals.py --live
 ```
+
+See [docs/ai-engineering.md](docs/ai-engineering.md) for the full AI engineering guide.
 
 ### Lint
 
@@ -287,6 +291,7 @@ Base path: `/api/v1`
 | GET | `/profiles` | List profiles |
 | GET | `/profiles/{id}` | Get profile |
 | PATCH | `/profiles/{id}` | Update profile |
+| GET | `/profiles/{id}/resume.pdf` | Download profile as PDF |
 | DELETE | `/profiles/{id}` | Delete profile |
 | POST | `/jobs/parse-text` | Paste JD → structured `JobExtraction` |
 | POST | `/jobs` | Create job; optional `profile_id` queues match analysis |
@@ -314,8 +319,8 @@ Full interactive docs: http://127.0.0.1:8000/docs
 | **M1** Explain the match | Done | Evidence-based match analysis with eval harness |
 | **M2** Job intake | Done | Paste JD → structured extraction → review |
 | **M3** Match on job insert | Done | Full analysis automatically when a job is saved |
-| **M4** Resume optimization | **Next** | Close gaps surfaced by match analysis |
-| **M5+** | Planned | Cover letters, company research, job discovery, interview prep |
+| **M4** Resume optimization | Done | Gap-driven suggestions with review before apply |
+| **M5** Cover letters | **Next** | Personalized outreach from match narrative |
 
 Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/project-status.md](docs/project-status.md)
 
@@ -331,6 +336,7 @@ Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/p
 
 | Doc | Contents |
 |-----|----------|
+| [docs/ai-engineering.md](docs/ai-engineering.md) | **Evals, tracing, structured outputs, patterns** |
 | [docs/vision.md](docs/vision.md) | Long-term product vision |
 | [docs/architecture.md](docs/architecture.md) | System design and data model |
 | [docs/project-status.md](docs/project-status.md) | Current state and what's next |

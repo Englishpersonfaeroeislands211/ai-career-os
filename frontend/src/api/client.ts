@@ -1,4 +1,4 @@
-import type { Job, JobCreate, JobCreateResponse, JobParseResult, MatchAnalysis, Profile, ProfileCreate, ResumeParseResult } from "../types";
+import type { Job, JobCreate, JobCreateResponse, JobParseResult, MatchAnalysis, Profile, ProfileCreate, ResumeOptimizationResult, ResumeParseResult, ResumeSuggestion } from "../types";
 import type { AppSettings, ListModelsRequest, ModelListResponse, SettingsUpdate } from "../types/settings";
 
 const BASE = "/api/v1";
@@ -48,6 +48,11 @@ export const api = {
       request<Profile>("/profiles", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: Partial<ProfileCreate>) =>
       request<Profile>(`/profiles/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    applyResumeSuggestions: (id: string, suggestions: ResumeSuggestion[]) =>
+      request<Profile>(`/profiles/${id}/apply-resume-suggestions`, {
+        method: "POST",
+        body: JSON.stringify({ suggestions }),
+      }),
     parseResume: (file: File) => {
       const form = new FormData();
       form.append("file", file);
@@ -55,6 +60,34 @@ export const api = {
         method: "POST",
         body: form,
       });
+    },
+    downloadResumePdf: async (id: string) => {
+      const res = await fetch(`${BASE}/profiles/${id}/resume.pdf`);
+      if (!res.ok) {
+        let message = res.statusText;
+        try {
+          const body = await res.json();
+          if (body.detail) {
+            message = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+          }
+        } catch {
+          // ignore parse errors
+        }
+        throw new ApiError(res.status, message);
+      }
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      const asciiMatch = disposition.match(/filename="([^"]+)"/i);
+      const filename = utf8Match
+        ? decodeURIComponent(utf8Match[1])
+        : asciiMatch?.[1] ?? "resume.pdf";
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
     },
   },
 
@@ -79,6 +112,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ profile_id: profileId, job_id: jobId }),
       }),
+    optimizeResume: (analysisId: string) =>
+      request<ResumeOptimizationResult>(
+        `/match-analyses/${analysisId}/resume-optimization`,
+        { method: "POST" },
+      ),
   },
 
   settings: {

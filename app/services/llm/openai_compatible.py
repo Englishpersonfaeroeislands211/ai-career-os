@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, TypeVar
@@ -10,6 +11,12 @@ from pydantic import BaseModel, ValidationError
 
 from app.logging_config import get_logger
 from app.services.llm.base import LLMError, Message
+from app.services.llm.tracing import (
+    LLMCallTrace,
+    extract_token_usage,
+    log_llm_call,
+    prompt_char_count,
+)
 from app.services.llm.urls import normalize_openai_base_url
 
 logger = get_logger(__name__)
@@ -46,34 +53,70 @@ class OpenAICompatibleClient:
         *,
         transform_payload: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     ) -> T:
-        payload = self._build_payload(messages, response_model)
-        url = f"{self._config.base_url.rstrip('/')}/chat/completions"
-        headers = {"Content-Type": "application/json"}
-        if self._config.api_key:
-            headers["Authorization"] = f"Bearer {self._config.api_key}"
+        operation = response_model.__name__
+        prompt_chars = prompt_char_count(messages)
+        started = time.perf_counter()
 
-        client = self._http_client or httpx.AsyncClient(timeout=DEFAULT_TIMEOUT)
         try:
-            response = await client.post(url, headers=headers, json=payload)
-        except httpx.ConnectError as exc:
-            raise LLMError(
-                f"Could not connect to {self._config.base_url}. Is the server running?"
-            ) from exc
-        except httpx.TimeoutException as exc:
-            raise LLMError(f"Timed out waiting for {self._config.base_url}.") from exc
-        finally:
-            if self._owns_client and self._http_client is None:
-                await client.aclose()
+            payload = self._build_payload(messages, response_model)
+            url = f"{self._config.base_url.rstrip('/')}/chat/completions"
+            headers = {"Content-Type": "application/json"}
+            if self._config.api_key:
+                headers["Authorization"] = f"Bearer {self._config.api_key}"
 
-        if response.status_code >= 400:
-            raise LLMError(f"Provider returned {response.status_code}: {response.text[:300]}")
+            client = self._http_client or httpx.AsyncClient(timeout=DEFAULT_TIMEOUT)
+            try:
+                response = await client.post(url, headers=headers, json=payload)
+            except httpx.ConnectError as exc:
+                raise LLMError(
+                    f"Could not connect to {self._config.base_url}. Is the server running?"
+                ) from exc
+            except httpx.TimeoutException as exc:
+                raise LLMError(f"Timed out waiting for {self._config.base_url}.") from exc
+            finally:
+                if self._owns_client and self._http_client is None:
+                    await client.aclose()
 
-        content = self._extract_message_content(response.json())
-        return self._parse_structured_response(
-            content,
-            response_model,
-            transform_payload=transform_payload,
+            if response.status_code >= 400:
+                raise LLMError(f"Provider returned {response.status_code}: {response.text[:300]}")
+
+            response_payload = response.json()
+            content = self._extract_message_content(response_payload)
+            prompt_tokens, completion_tokens = extract_token_usage(response_payload)
+            result = self._parse_structured_response(
+                content,
+                response_model,
+                transform_payload=transform_payload,
+            )
+        except LLMError as exc:
+            log_llm_call(
+                LLMCallTrace(
+                    operation=operation,
+                    model=self._config.model,
+                    latency_ms=(time.perf_counter() - started) * 1000,
+                    prompt_chars=prompt_chars,
+                    completion_chars=0,
+                    prompt_tokens=None,
+                    completion_tokens=None,
+                    status="error",
+                    error=str(exc),
+                )
+            )
+            raise
+
+        log_llm_call(
+            LLMCallTrace(
+                operation=operation,
+                model=self._config.model,
+                latency_ms=(time.perf_counter() - started) * 1000,
+                prompt_chars=prompt_chars,
+                completion_chars=len(content),
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                status="ok",
+            )
         )
+        return result
 
     def _build_payload(
         self,

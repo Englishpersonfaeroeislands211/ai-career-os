@@ -90,6 +90,21 @@ export interface MatchResult {
   summary: string;
 }
 
+export interface ResumeSuggestion {
+  gap_evidence: string;
+  section: "headline" | "skills" | "experience" | "projects";
+  action: "rewrite" | "add" | "emphasize";
+  target_label: string;
+  current_text: string | null;
+  suggested_text: string;
+  rationale: string;
+}
+
+export interface ResumeOptimizationResult {
+  summary: string;
+  suggestions: ResumeSuggestion[];
+}
+
 export interface ProfileCreate {
   name: string;
   headline?: string;

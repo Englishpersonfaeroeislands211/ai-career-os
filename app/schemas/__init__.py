@@ -5,6 +5,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.job_extraction import JobExtraction
 from app.schemas.resume_extraction import ResumeExtraction
+from app.schemas.resume_optimization import (
+    ApplyResumeSuggestionsRequest as ApplyResumeSuggestionsRequest,
+)
+from app.schemas.resume_optimization import (
+    ResumeOptimizationResult as ResumeOptimizationResult,
+)
 
 
 class ProfileCreate(BaseModel):

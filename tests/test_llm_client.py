@@ -34,6 +34,40 @@ def _resume_payload() -> dict:
 
 
 @pytest.mark.asyncio
+async def test_generate_structured_logs_llm_trace(caplog):
+    import logging
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": json.dumps(_resume_payload())}}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 40},
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as http_client:
+        client = OpenAICompatibleClient(
+            build_openai_compatible_config(
+                model="qwen/qwen3.5-9b",
+                base_url="http://127.0.0.1:1234/v1",
+                api_key=None,
+            ),
+            http_client=http_client,
+        )
+        with caplog.at_level(logging.INFO, logger="app.services.llm.tracing"):
+            await client.generate_structured(
+                messages=[Message(role="user", content="Extract resume fields.")],
+                response_model=ResumeExtraction,
+            )
+
+    assert any("LLM call |" in record.message for record in caplog.records)
+    assert any("operation=ResumeExtraction" in record.message for record in caplog.records)
+    assert any("prompt_tokens=100" in record.message for record in caplog.records)
+
+
+@pytest.mark.asyncio
 async def test_generate_structured_parses_openai_compatible_response():
     captured: dict = {}
 

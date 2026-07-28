@@ -10,8 +10,8 @@ Incremental build plan. Each milestone adds one capability and is validated befo
 | 1 | [Explain the match](m1-explain-the-match.md) | Structured outputs, prompt engineering, evals | **Done** |
 | 2 | [Job structuring from paste](m2-job-intake.md) | Structured outputs, prompt engineering | **Done** |
 | 3 | [Match on job insert](m3-match-on-intake.md) | Background tasks, intake-time matching | **Done** |
-| 4 | Resume optimization | Reflection, iterative refinement | **Next** |
-| 5 | Cover letter generation | Tone control, template + generation hybrid | Planned |
+| 4 | [Resume optimization](m4-resume-optimization.md) | Reflection, iterative refinement | **Done** |
+| 5 | Cover letter generation | Tone control, template + generation hybrid | **Next** |
 | 6 | Company research | Tool calling, web search | Planned |
 | 7 | Job discovery | Official APIs, user-provided data (no scraping) | Planned |
 | 8 | Memory + feedback loop | Long-term memory, learning from feedback | Planned |
@@ -26,25 +26,13 @@ Milestones 4–10 are directional. Each depends on eval results from the previou
 |-----|-------------|---------|
 | [M3 batch matching (archived)](m3-batch-matching.md) | Bulk “Analyze all” with comparative LLM batching | Built, then **removed from product** — see [M3 match on intake](m3-match-on-intake.md) |
 
-## M4 — Resume optimization (next)
+## M5 — Cover letter generation (next)
 
-**Problem:** Match analysis surfaces gaps (“no Kubernetes in production”, “missing fintech domain”). Users need actionable help closing them — not just a score.
+**Problem:** After match analysis and optional resume tuning, users still need a tailored cover letter for strong-fit roles.
 
-**Direction:**
+**Direction:** Generate from profile + job + match strengths/gaps; human review before copy/export.
 
-```
-MatchResult.gaps
-  → LLM suggests bullet rewrites / skill framing
-  → user reviews diff
-  → optional new profile version
-```
-
-**Ready when:**
-
-1. Match-at-intake eval fixtures exist for the primary path
-2. M1 match quality is stable on golden resume + job pairs
-
-**Not in scope yet:** auto-apply, multi-version A/B testing, PDF re-generation.
+See [m4-resume-optimization.md](m4-resume-optimization.md) for the completed prior step.
 
 ## Milestone selection criteria
 

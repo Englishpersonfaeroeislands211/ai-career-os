@@ -2,6 +2,7 @@ import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +10,7 @@ from app.db.session import get_db
 from app.logging_config import get_logger
 from app.models import Job, MatchAnalysis, Profile
 from app.schemas import (
+    ApplyResumeSuggestionsRequest,
     JobCreate,
     JobCreateRead,
     JobParseRead,
@@ -20,14 +22,26 @@ from app.schemas import (
     ProfileCreate,
     ProfileRead,
     ProfileUpdate,
+    ResumeOptimizationResult,
     ResumeParseRead,
 )
 from app.services.job_paste_parser import JobPasteParseError, prepare_job_post_text
 from app.services.job_structurer import structure_job
 from app.services.llm.base import LLMConfigurationError, LLMError
 from app.services.matcher import run_match_analysis
+from app.services.resume_optimizer import (
+    match_result_from_analysis_payload,
+    optimize_resume_for_match,
+)
 from app.services.resume_parser import ResumeParseError, extract_text_from_pdf
+from app.services.resume_pdf_export import (
+    ResumePdfExportError,
+    build_profile_resume_pdf,
+    content_disposition_attachment,
+    resume_pdf_filename,
+)
 from app.services.resume_structurer import structure_resume
+from app.services.resume_suggestion_apply import apply_suggestions
 from app.services.screening_card import attach_screening_card_to_metadata
 
 logger = get_logger(__name__)
@@ -117,6 +131,25 @@ async def get_profile(profile_id: UUID, db: AsyncSession = Depends(get_db)):
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     return profile
+
+
+@router.get("/profiles/{profile_id}/resume.pdf")
+async def export_profile_resume_pdf(profile_id: UUID, db: AsyncSession = Depends(get_db)):
+    profile = await db.get(Profile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    try:
+        pdf_bytes = build_profile_resume_pdf(profile)
+    except ResumePdfExportError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    filename = resume_pdf_filename(profile.name)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": content_disposition_attachment(filename)},
+    )
 
 
 @router.patch("/profiles/{profile_id}", response_model=ProfileRead)
@@ -309,3 +342,72 @@ async def get_match_analysis(analysis_id: UUID, db: AsyncSession = Depends(get_d
     if not analysis:
         raise HTTPException(status_code=404, detail="Match analysis not found")
     return analysis
+
+
+@router.post(
+    "/match-analyses/{analysis_id}/resume-optimization",
+    response_model=ResumeOptimizationResult,
+)
+async def create_resume_optimization(analysis_id: UUID, db: AsyncSession = Depends(get_db)):
+    analysis = await db.get(MatchAnalysis, analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Match analysis not found")
+    if analysis.status != "completed" or not analysis.result:
+        raise HTTPException(
+            status_code=400,
+            detail="Match analysis must be completed before generating resume suggestions",
+        )
+    if analysis.result.get("depth") == "screen":
+        raise HTTPException(
+            status_code=400,
+            detail="Full match analysis required for resume optimization",
+        )
+
+    profile = await db.get(Profile, analysis.profile_id)
+    job = await db.get(Job, analysis.job_id)
+    if not profile or not job:
+        raise HTTPException(status_code=404, detail="Profile or job not found")
+
+    try:
+        match_result = match_result_from_analysis_payload(analysis.result)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid match analysis result") from exc
+
+    if not match_result.gaps:
+        raise HTTPException(status_code=400, detail="No gaps to optimize against")
+
+    try:
+        return await optimize_resume_for_match(db, profile, job, match_result)
+    except (LLMConfigurationError, LLMError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/profiles/{profile_id}/apply-resume-suggestions", response_model=ProfileRead)
+async def apply_resume_suggestions(
+    profile_id: UUID,
+    body: ApplyResumeSuggestionsRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    profile = await db.get(Profile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    resume_text, structured_data, headline = apply_suggestions(
+        profile.resume_text,
+        profile.structured_data,
+        profile.headline,
+        body.suggestions,
+    )
+    profile.resume_text = resume_text
+    profile.structured_data = structured_data
+    if headline is not None:
+        profile.headline = headline
+
+    await db.commit()
+    await db.refresh(profile)
+    logger.info(
+        "Applied %d resume suggestions to profile %s",
+        len(body.suggestions),
+        profile_id,
+    )
+    return profile

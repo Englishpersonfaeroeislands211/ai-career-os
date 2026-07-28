@@ -28,6 +28,12 @@ def test_load_batch_screen_match_prompt():
     assert "job_id" in prompt
 
 
+def test_load_resume_optimization_prompt():
+    prompt = load_prompt("resume_optimization")
+    assert "suggestions" in prompt
+    assert "NEVER invent" in prompt
+
+
 def test_load_job_extraction_prompt():
     prompt = load_prompt("job_extraction")
     assert "JobExtraction schema" in prompt

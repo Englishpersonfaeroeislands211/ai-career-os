@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { Job, JobExtraction, MatchAnalysis } from "../types";
 import { Layout } from "../components/Layout";
 import { MatchResultPanel } from "../components/MatchResultPanel";
+import { ResumeOptimizationPanel } from "../components/ResumeOptimizationPanel";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { latestAnalysisForJob } from "../lib/matches";
 import {
@@ -273,6 +274,17 @@ export function JobDetailPage() {
           profileName={profile.name}
           jobTitle={`${job.title} @ ${job.company}`}
         />
+
+        {analysis && (
+          <ResumeOptimizationPanel
+            analysis={analysis}
+            profileId={profile.id}
+            onApplied={() => {
+              /* profile updated in place; user can re-analyze */
+            }}
+            onReAnalyze={handleAnalyze}
+          />
+        )}
       </main>
     </Layout>
   );
