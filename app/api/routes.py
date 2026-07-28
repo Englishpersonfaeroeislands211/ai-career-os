@@ -10,6 +10,8 @@ from app.logging_config import get_logger
 from app.models import Job, MatchAnalysis, Profile
 from app.schemas import (
     JobCreate,
+    JobParseRead,
+    JobParseRequest,
     JobRead,
     JobUpdate,
     MatchAnalysisCreate,
@@ -19,6 +21,8 @@ from app.schemas import (
     ProfileUpdate,
     ResumeParseRead,
 )
+from app.services.job_paste_parser import JobPasteParseError, prepare_job_post_text
+from app.services.job_structurer import structure_job
 from app.services.llm.base import LLMConfigurationError, LLMError
 from app.services.matcher import run_match_analysis
 from app.services.resume_parser import ResumeParseError, extract_text_from_pdf
@@ -154,6 +158,36 @@ async def create_job(body: JobCreate, db: AsyncSession = Depends(get_db)):
 async def list_jobs(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Job).order_by(Job.created_at.desc()))
     return result.scalars().all()
+
+
+@router.post("/jobs/parse-text", response_model=JobParseRead)
+async def parse_job_text(body: JobParseRequest, db: AsyncSession = Depends(get_db)):
+    logger.info("Parsing pasted job posting (%d chars)", len(body.text))
+
+    try:
+        job_text = await asyncio.to_thread(prepare_job_post_text, body.text)
+    except JobPasteParseError as exc:
+        logger.warning("Job paste parse failed: %s", exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    logger.info("Structuring job posting (%d chars after normalize)", len(job_text))
+
+    try:
+        extraction = await structure_job(db, job_text)
+    except LLMConfigurationError as exc:
+        logger.warning("Job structuring skipped — provider not configured: %s", exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LLMError as exc:
+        logger.error("Job structuring failed: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    logger.info(
+        "Structured job posting — title=%r, company=%r, requirements=%d",
+        extraction.title,
+        extraction.company,
+        len(extraction.requirements),
+    )
+    return JobParseRead(job_text=job_text, structured_data=extraction)
 
 
 @router.get("/jobs/{job_id}", response_model=JobRead)

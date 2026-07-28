@@ -1,0 +1,102 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import type { ResumeParseResult } from "../types";
+import { Layout } from "../components/Layout";
+import { parseStructuredData, StructuredProfileView } from "../components/StructuredProfileView";
+import { ResumeUploadZone } from "../components/ResumeUploadZone";
+import { useActiveProfile } from "../hooks/useActiveProfile";
+import { Button } from "../components/ui";
+
+export function ProfilePage() {
+  const navigate = useNavigate();
+  const { profile, loading, requireProfile } = useActiveProfile();
+  const [showUpload, setShowUpload] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !profile) requireProfile();
+  }, [loading, profile, requireProfile]);
+
+  function handleParsed(parsed: ResumeParseResult) {
+    if (!profile) return;
+    navigate("/onboarding/review", {
+      state: {
+        parsed,
+        profileId: profile.id,
+        mode: "update",
+        returnTo: "/profile",
+      },
+    });
+  }
+
+  if (loading || !profile) {
+    return (
+      <Layout subtitle="Profile">
+        <main className="flex min-h-[50vh] items-center justify-center">
+          <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        </main>
+      </Layout>
+    );
+  }
+
+  const structured = parseStructuredData(profile.structured_data);
+
+  return (
+    <Layout subtitle="Your career profile">
+      <main className="mx-auto max-w-3xl space-y-8 px-6 py-8">
+        <section className="rounded-2xl border border-border bg-surface-raised p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                Primary profile
+              </p>
+              <h2 className="mt-1 text-2xl font-bold">{profile.name}</h2>
+              {profile.headline && <p className="mt-2 text-text-muted">{profile.headline}</p>}
+              <p className="mt-3 text-xs text-text-muted">
+                Updated {new Date(profile.updated_at).toLocaleDateString()}
+              </p>
+            </div>
+            <Button variant="secondary" onClick={() => setShowUpload((v) => !v)}>
+              {showUpload ? "Cancel upload" : "Upload new resume"}
+            </Button>
+          </div>
+        </section>
+
+        {showUpload && (
+          <section className="rounded-xl border border-accent/30 bg-accent/5 p-6">
+            <h3 className="mb-4 font-semibold">Replace resume</h3>
+            <p className="mb-4 text-sm text-text-muted">
+              Upload a new PDF — we&apos;ll re-extract structured fields for you to review before
+              updating.
+            </p>
+            <ResumeUploadZone onParsed={handleParsed} compact />
+          </section>
+        )}
+
+        {structured ? (
+          <section className="rounded-xl border border-border bg-surface-raised p-6">
+            <StructuredProfileView data={structured} />
+          </section>
+        ) : (
+          <section className="rounded-xl border border-dashed border-border bg-surface-raised p-8 text-center">
+            <p className="text-text-muted">
+              No structured resume data yet. Upload a PDF to extract skills, experience, and
+              education.
+            </p>
+            <Button className="mt-4" onClick={() => setShowUpload(true)}>
+              Upload resume
+            </Button>
+          </section>
+        )}
+
+        <details className="rounded-xl border border-border bg-surface-raised">
+          <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-text-muted">
+            Raw resume text
+          </summary>
+          <pre className="max-h-96 overflow-auto border-t border-border px-5 py-4 text-xs whitespace-pre-wrap text-text-muted">
+            {profile.resume_text}
+          </pre>
+        </details>
+      </main>
+    </Layout>
+  );
+}

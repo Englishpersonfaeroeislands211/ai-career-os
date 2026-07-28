@@ -4,8 +4,16 @@ import { api } from "../api/client";
 import type { ResumeParseResult, ResumeStructuredData } from "../types";
 import { Layout } from "../components/Layout";
 import { OnboardingSteps } from "../components/OnboardingSteps";
+import { StructuredProfileView } from "../components/StructuredProfileView";
 import { Button, ErrorBanner, Field, Input, Textarea } from "../components/ui";
 import { setActiveProfileId } from "../lib/profile";
+
+interface ReviewLocationState {
+  parsed?: ResumeParseResult;
+  profileId?: string;
+  mode?: "update";
+  returnTo?: string;
+}
 
 function skillsToText(skills: string[]) {
   return skills.join("\n");
@@ -21,7 +29,9 @@ function textToSkills(value: string) {
 export function ReviewPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const parsed = location.state?.parsed as ResumeParseResult | undefined;
+  const state = location.state as ReviewLocationState | null;
+  const parsed = state?.parsed;
+  const isUpdate = state?.mode === "update" && !!state.profileId;
 
   const [name, setName] = useState("");
   const [headline, setHeadline] = useState("");
@@ -68,14 +78,25 @@ export function ReviewPage() {
       : null;
 
     try {
-      const profile = await api.profiles.create({
-        name: name.trim(),
-        headline: headline.trim() || undefined,
-        resume_text: resumeText.trim(),
-        structured_data: payloadStructured,
-      });
-      setActiveProfileId(profile.id);
-      navigate("/dashboard", { replace: true });
+      if (isUpdate && state?.profileId) {
+        await api.profiles.update(state.profileId, {
+          name: name.trim(),
+          headline: headline.trim() || undefined,
+          resume_text: resumeText.trim(),
+          structured_data: payloadStructured,
+        });
+        setActiveProfileId(state.profileId);
+        navigate(state.returnTo ?? "/profile", { replace: true });
+      } else {
+        const profile = await api.profiles.create({
+          name: name.trim(),
+          headline: headline.trim() || undefined,
+          resume_text: resumeText.trim(),
+          structured_data: payloadStructured,
+        });
+        setActiveProfileId(profile.id);
+        navigate("/", { replace: true });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
@@ -84,14 +105,14 @@ export function ReviewPage() {
   }
 
   return (
-    <Layout subtitle="Review your profile">
+    <Layout subtitle={isUpdate ? "Review updated resume" : "Review your profile"} showNav={isUpdate}>
       <main className="mx-auto max-w-2xl space-y-6 px-6 py-12">
-        <OnboardingSteps current={3} />
+        {!isUpdate && <OnboardingSteps current={3} />}
 
         <div>
           <h2 className="text-2xl font-semibold">Review & confirm</h2>
           <p className="mt-2 text-text-muted">
-            We structured your resume with AI. Edit anything that looks wrong before continuing.
+            We structured your resume with AI. Edit anything that looks wrong before saving.
           </p>
         </div>
 
@@ -145,54 +166,33 @@ export function ReviewPage() {
           </Field>
         </div>
 
-        {structuredData && structuredData.experience.length > 0 && (
-          <section className="space-y-3 rounded-xl border border-border bg-surface-raised p-5">
-            <h3 className="text-sm font-medium uppercase tracking-wide text-text-muted">
-              Experience
+        {structuredData && (
+          <section className="rounded-xl border border-border bg-surface-raised p-5">
+            <h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-text-muted">
+              Extracted preview
             </h3>
-            <div className="space-y-4">
-              {structuredData.experience.map((entry, index) => (
-                <article key={`${entry.company}-${entry.title}-${index}`} className="space-y-1">
-                  <p className="font-medium">{entry.title}</p>
-                  <p className="text-sm text-text-muted">
-                    {entry.company}
-                    {entry.duration ? ` · ${entry.duration}` : ""}
-                  </p>
-                  {entry.highlights.length > 0 && (
-                    <ul className="list-disc space-y-1 pl-5 text-sm text-text-muted">
-                      {entry.highlights.map((highlight) => (
-                        <li key={highlight}>{highlight}</li>
-                      ))}
-                    </ul>
-                  )}
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {structuredData && structuredData.education.length > 0 && (
-          <section className="space-y-3 rounded-xl border border-border bg-surface-raised p-5">
-            <h3 className="text-sm font-medium uppercase tracking-wide text-text-muted">
-              Education
-            </h3>
-            <div className="space-y-3">
-              {structuredData.education.map((entry, index) => (
-                <article key={`${entry.school}-${entry.degree}-${index}`}>
-                  <p className="font-medium">{entry.degree}</p>
-                  <p className="text-sm text-text-muted">
-                    {entry.school}
-                    {entry.duration ? ` · ${entry.duration}` : ""}
-                  </p>
-                </article>
-              ))}
-            </div>
+            <StructuredProfileView
+              data={{
+                ...structuredData,
+                name: name.trim() || structuredData.name,
+                headline: headline.trim() || structuredData.headline,
+                email: email.trim() || structuredData.email,
+                phone: phone.trim() || structuredData.phone,
+                skills: textToSkills(skillsText),
+              }}
+              compact
+            />
           </section>
         )}
 
         <div className="flex justify-between">
-          <Button variant="ghost" onClick={() => navigate("/onboarding/upload")}>
-            Re-upload
+          <Button
+            variant="ghost"
+            onClick={() =>
+              navigate(isUpdate ? (state?.returnTo ?? "/profile") : "/onboarding/upload")
+            }
+          >
+            {isUpdate ? "Cancel" : "Re-upload"}
           </Button>
           <Button
             onClick={handleSave}
@@ -200,7 +200,7 @@ export function ReviewPage() {
             disabled={!name.trim() || !resumeText.trim()}
             className="px-8"
           >
-            Save & continue
+            {isUpdate ? "Update profile" : "Save & continue"}
           </Button>
         </div>
       </main>

@@ -101,4 +101,21 @@ export interface JobCreate {
   description: string;
   location?: string;
   url?: string;
+  raw_metadata?: Record<string, unknown> | null;
+}
+
+export interface JobExtraction {
+  title: string;
+  company: string;
+  description: string;
+  work_mode?: "remote" | "hybrid" | "on-site" | "flexible" | null;
+  location?: string | null;
+  employment_type?: string | null;
+  salary_range?: string | null;
+  requirements: string[];
+}
+
+export interface JobParseResult {
+  job_text: string;
+  structured_data: JobExtraction;
 }

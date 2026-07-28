@@ -1,4 +1,4 @@
-import type { Job, JobCreate, MatchAnalysis, Profile, ProfileCreate, ResumeParseResult } from "../types";
+import type { Job, JobCreate, JobParseResult, MatchAnalysis, Profile, ProfileCreate, ResumeParseResult } from "../types";
 import type { AppSettings, ListModelsRequest, ModelListResponse, SettingsUpdate } from "../types/settings";
 
 const BASE = "/api/v1";
@@ -64,6 +64,11 @@ export const api = {
       request<Job>("/jobs", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: Partial<JobCreate>) =>
       request<Job>(`/jobs/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    parseText: (text: string) =>
+      request<JobParseResult>("/jobs/parse-text", {
+        method: "POST",
+        body: JSON.stringify({ text }),
+      }),
   },
 
   matchAnalyses: {

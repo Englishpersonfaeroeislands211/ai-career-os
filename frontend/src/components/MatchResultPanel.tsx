@@ -1,4 +1,5 @@
 import type { MatchAnalysis, MatchResult } from "../types";
+import { ScoreRing } from "./ScoreRing";
 import { Badge, Card } from "./ui";
 
 interface MatchResultPanelProps {
@@ -16,32 +17,13 @@ const recommendationLabels: Record<
   "do not apply": { label: "Skip", variant: "danger" },
 };
 
-function ScoreRing({ score }: { score: number }) {
-  const pct = Math.round(score);
-  const color =
-    pct >= 70 ? "text-success" : pct >= 40 ? "text-warning" : "text-danger";
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className={`text-4xl font-bold tabular-nums ${color}`}>{pct}%</span>
-      <span className="text-xs text-text-muted">match score</span>
-    </div>
-  );
-}
-
-function severityVariant(severity: MatchResult["gaps"][number]["severity"]) {
-  if (severity === "high") return "danger";
-  if (severity === "medium") return "warning";
-  return "info";
-}
-
 function ResultContent({ result }: { result: MatchResult }) {
   const rec = recommendationLabels[result.recommendation];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-6">
-        <ScoreRing score={result.score} />
+        <ScoreRing score={result.score} size="lg" />
         <Badge variant={rec.variant}>{rec.label}</Badge>
       </div>
 
@@ -92,6 +74,12 @@ function ResultContent({ result }: { result: MatchResult }) {
       )}
     </div>
   );
+}
+
+function severityVariant(severity: MatchResult["gaps"][number]["severity"]) {
+  if (severity === "high") return "danger";
+  if (severity === "medium") return "warning";
+  return "info";
 }
 
 function PendingState() {

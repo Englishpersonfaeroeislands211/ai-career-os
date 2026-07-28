@@ -46,3 +46,4 @@ This repository should be educational. Thousands of developers may read it. Code
 3. **Human-in-the-loop** — especially for career decisions with real consequences
 4. **Production-ready patterns** — clean architecture, observability, testability
 5. **No premature abstraction** — prove the simple path first
+6. **No job scraping** — jobs are user-pasted only; optional URL stored as reference, never fetched

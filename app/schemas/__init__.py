@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.job_extraction import JobExtraction
 from app.schemas.resume_extraction import ResumeExtraction
 
 
@@ -72,6 +73,15 @@ class JobRead(BaseModel):
     raw_metadata: dict | None
     created_at: datetime
     updated_at: datetime
+
+
+class JobParseRequest(BaseModel):
+    text: str = Field(min_length=100, max_length=100_000)
+
+
+class JobParseRead(BaseModel):
+    job_text: str
+    structured_data: JobExtraction
 
 
 class MatchAnalysisCreate(BaseModel):
