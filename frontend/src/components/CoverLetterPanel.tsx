@@ -36,7 +36,7 @@ export function CoverLetterPanel({ analysis }: CoverLetterPanelProps) {
   return (
     <Card
       title="Cover letter"
-      description="Draft → critique → revise — three-pass generation from your match analysis"
+      description="Draft → critique → revise — max 400 characters"
     >
       {error && (
         <div className="mb-4">
@@ -47,8 +47,8 @@ export function CoverLetterPanel({ analysis }: CoverLetterPanelProps) {
       {!letter && (
         <div className="space-y-4">
           <p className="text-sm text-text-muted">
-            Generates a tailored letter using match strengths and gaps, then self-critiques and
-            revises before showing the final version.
+            Generates a short tailored note (max 400 characters) from your match analysis, then
+            self-critiques and revises before showing the final version.
           </p>
           <Button onClick={handleGenerate} loading={loading}>
             Generate cover letter

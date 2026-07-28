@@ -35,9 +35,9 @@ def test_load_resume_optimization_prompt():
 
 
 def test_load_cover_letter_prompts():
-    assert "cover letter" in load_prompt("cover_letter_draft").casefold()
+    assert "400 characters" in load_prompt("cover_letter_draft").casefold()
+    assert "400 characters" in load_prompt("cover_letter_revise").casefold()
     assert "editor" in load_prompt("cover_letter_critique").casefold()
-    assert "revise" in load_prompt("cover_letter_revise").casefold()
 
 
 def test_load_job_extraction_prompt():

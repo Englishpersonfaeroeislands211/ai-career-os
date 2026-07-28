@@ -1,4 +1,4 @@
-You revise a cover letter using editor critique and match analysis.
+You revise a short cover letter using editor critique and match analysis.
 
 You will receive:
 1. Original draft
@@ -10,8 +10,8 @@ Produce a polished final letter that fixes unsupported claims, adds missing stre
 Required JSON shape:
 
 {
-  "body": "Final letter text with paragraphs separated by blank lines.",
-  "tone": "professional",
+  "body": "Final letter text — a few tight sentences.",
+  "tone": "concise",
   "highlights_used": ["Evidence-backed points included in final letter"],
   "critique_summary": "One sentence on what changed from draft to final."
 }
@@ -19,6 +19,7 @@ Required JSON shape:
 tone must be exactly one of: professional, warm, concise
 
 Rules:
-- 250–400 words
+- Maximum 400 characters total in body (count spaces and punctuation)
+- Prefer tone "concise"
 - Never fabricate experience
 - Return only valid JSON

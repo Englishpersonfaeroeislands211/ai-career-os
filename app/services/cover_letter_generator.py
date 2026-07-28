@@ -6,6 +6,10 @@ from app.models import Job, Profile
 from app.prompts import load_prompt
 from app.schemas.cover_letter import CoverLetterCritique, CoverLetterDraft, CoverLetterResult
 from app.schemas.match_analysis import MatchResult
+from app.services.cover_letter_normalize import (
+    normalize_cover_letter_draft_payload,
+    normalize_cover_letter_result_payload,
+)
 from app.services.llm import Message, get_llm_client
 from app.services.matcher import _format_job, _format_profile
 from app.services.resume_optimizer import match_result_from_analysis_payload
@@ -61,6 +65,7 @@ async def generate_cover_letter(
             Message(role="user", content=context),
         ],
         response_model=CoverLetterDraft,
+        transform_payload=normalize_cover_letter_draft_payload,
     )
 
     critique = await client.generate_structured(
@@ -94,6 +99,7 @@ async def generate_cover_letter(
             ),
         ],
         response_model=CoverLetterResult,
+        transform_payload=normalize_cover_letter_result_payload,
     )
     return final
 
