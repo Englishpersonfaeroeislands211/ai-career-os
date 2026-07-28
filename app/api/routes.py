@@ -11,6 +11,7 @@ from app.logging_config import get_logger
 from app.models import Job, MatchAnalysis, Profile
 from app.schemas import (
     ApplyResumeSuggestionsRequest,
+    CompanyBrief,
     CoverLetterResult,
     JobCreate,
     JobCreateRead,
@@ -26,6 +27,7 @@ from app.schemas import (
     ResumeOptimizationResult,
     ResumeParseRead,
 )
+from app.services.company_research import company_brief_to_storage, research_company
 from app.services.cover_letter_generator import (
     generate_cover_letter,
     match_result_for_cover_letter,
@@ -48,6 +50,7 @@ from app.services.resume_pdf_export import (
 from app.services.resume_structurer import structure_resume
 from app.services.resume_suggestion_apply import apply_suggestions
 from app.services.screening_card import attach_screening_card_to_metadata
+from app.services.search.base import SearchError
 
 logger = get_logger(__name__)
 
@@ -296,6 +299,29 @@ async def delete_job(job_id: UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Job not found")
     await db.delete(job)
     await db.commit()
+
+
+@router.post(
+    "/jobs/{job_id}/company-research",
+    response_model=CompanyBrief,
+)
+async def create_company_research(job_id: UUID, db: AsyncSession = Depends(get_db)):
+    job = await db.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    try:
+        brief = await research_company(db, job)
+    except SearchError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except (LLMConfigurationError, LLMError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    job.company_brief = company_brief_to_storage(brief)
+    await db.commit()
+    await db.refresh(job)
+    logger.info("Company research completed: job=%s company=%r", job_id, job.company)
+    return brief
 
 
 # ---------------------------------------------------------------------------

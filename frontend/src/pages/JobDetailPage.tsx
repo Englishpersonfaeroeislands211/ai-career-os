@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { Job, JobExtraction, MatchAnalysis } from "../types";
+import type { CompanyBrief, Job, JobExtraction, MatchAnalysis } from "../types";
 import { Layout } from "../components/Layout";
+import { CompanyResearchPanel } from "../components/CompanyResearchPanel";
 import { CoverLetterPanel } from "../components/CoverLetterPanel";
 import { MatchResultPanel } from "../components/MatchResultPanel";
 import { ResumeOptimizationPanel } from "../components/ResumeOptimizationPanel";
@@ -274,6 +275,11 @@ export function JobDetailPage() {
           analysis={analysis}
           profileName={profile.name}
           jobTitle={`${job.title} @ ${job.company}`}
+        />
+
+        <CompanyResearchPanel
+          job={job}
+          onUpdated={(brief: CompanyBrief) => setJob({ ...job, company_brief: brief })}
         />
 
         {analysis && (

@@ -40,6 +40,11 @@ def test_load_cover_letter_prompts():
     assert "editor" in load_prompt("cover_letter_critique").casefold()
 
 
+def test_load_company_research_prompts():
+    assert "queries" in load_prompt("company_research_plan")
+    assert "search results" in load_prompt("company_research_synthesize").casefold()
+
+
 def test_load_job_extraction_prompt():
     prompt = load_prompt("job_extraction")
     assert "JobExtraction schema" in prompt

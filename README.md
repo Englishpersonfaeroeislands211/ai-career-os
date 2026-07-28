@@ -299,6 +299,7 @@ Base path: `/api/v1`
 | GET | `/jobs/{id}` | Get job |
 | PATCH | `/jobs/{id}` | Update job |
 | DELETE | `/jobs/{id}` | Delete job |
+| POST | `/jobs/{id}/company-research` | Plan → web search → company brief |
 | POST | `/match-analyses` | Manual re-analyze (background LLM matcher) |
 | POST | `/match-analyses/{id}/resume-optimization` | Gap-driven resume suggestions |
 | POST | `/match-analyses/{id}/cover-letter` | 3-pass cover letter generation |
@@ -323,7 +324,8 @@ Full interactive docs: http://127.0.0.1:8000/docs
 | **M3** Match on job insert | Done | Full analysis automatically when a job is saved |
 | **M4** Resume optimization | Done | Gap-driven suggestions with review before apply |
 | **M5** Progressive match + cover letter | Done | Fast screen at intake; 3-pass cover letter chain |
-| **M6** Company research | **Next** | Employer context via tool calling |
+| **M6** Company research | Done | Web search + source-grounded company brief |
+| **M7** Job discovery | **Next** | Official APIs for job feeds |
 
 Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/project-status.md](docs/project-status.md)
 
@@ -354,7 +356,7 @@ Contributions welcome — especially around:
 
 - LLM provider adapters (Anthropic native structured output, Google Gemini)
 - Extraction and match quality — eval fixtures (sample resumes/jobs + expected fields)
-- Resume optimization and cover letter (M4–M5)
+- Company research and cover letter (M5–M6)
 - Documentation and DX improvements
 
 ### Commit messages

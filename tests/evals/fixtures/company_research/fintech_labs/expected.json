@@ -1,0 +1,7 @@
+{
+  "must_include_company": "FinTech Labs",
+  "must_include_terms": ["payment", "remote"],
+  "summary_not_empty": true,
+  "min_culture_signals": 1,
+  "min_interview_signals": 1
+}

@@ -12,8 +12,8 @@ Incremental build plan. Each milestone adds one capability and is validated befo
 | 3 | [Match on job insert](m3-match-on-intake.md) | Background tasks, intake-time matching | **Done** |
 | 4 | [Resume optimization](m4-resume-optimization.md) | Reflection, iterative refinement | **Done** |
 | 5 | [Progressive match + cover letter](m5-progressive-match-cover-letter.md) | Staged inference, reflection chain | **Done** |
-| 6 | Company research | Tool calling, web search | **Next** |
-| 7 | Job discovery | Official APIs, user-provided data (no scraping) | Planned |
+| 6 | [Company research](m6-company-research.md) | Tool calling, web search | **Done** |
+| 7 | Job discovery | Official APIs, user-provided data (no scraping) | **Next** |
 | 8 | Memory + feedback loop | Long-term memory, learning from feedback | Planned |
 | 9 | Interview preparation | Multi-step planning, structured curricula | Planned |
 | 10 | Application automation | Human-in-the-loop, guardrails | Planned |
@@ -26,13 +26,13 @@ Milestones 4–10 are directional. Each depends on eval results from the previou
 |-----|-------------|---------|
 | [M3 batch matching (archived)](m3-batch-matching.md) | Bulk “Analyze all” with comparative LLM batching | Built, then **removed from product** — see [M3 match on intake](m3-match-on-intake.md) |
 
-## M6 — Company research (next)
+## M7 — Job discovery (next)
 
-**Problem:** Match analysis explains fit against the JD, but users lack employer context (culture, recent news, interview style).
+**Problem:** Users paste jobs one at a time; discovery should come from official APIs or user-provided feeds — not scraping.
 
-**Direction:** Tool-calling agent with web search; structured company brief attached to job detail.
+**Direction:** Integrate approved job board APIs; attach discovered jobs to the existing intake + match pipeline.
 
-See [m5-progressive-match-cover-letter.md](m5-progressive-match-cover-letter.md) for the completed prior step.
+See [m6-company-research.md](m6-company-research.md) for the completed prior step.
 
 ## Milestone selection criteria
 

@@ -41,6 +41,7 @@ class Job(Base):
     url: Mapped[str | None] = mapped_column(String(2048))
     source: Mapped[str | None] = mapped_column(String(100))
     raw_metadata: Mapped[dict | None] = mapped_column(JSONB, default=None)
+    company_brief: Mapped[dict | None] = mapped_column(JSONB, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

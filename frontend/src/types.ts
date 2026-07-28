@@ -55,8 +55,26 @@ export interface Job {
   url: string | null;
   source: string | null;
   raw_metadata: Record<string, unknown> | null;
+  company_brief?: CompanyBrief | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface CompanyBrief {
+  company: string;
+  summary: string;
+  culture_signals: string[];
+  recent_news: string[];
+  interview_signals: string[];
+  red_flags: string[];
+  sources: SearchResult[];
+  researched_at: string;
 }
 
 export interface MatchAnalysis {

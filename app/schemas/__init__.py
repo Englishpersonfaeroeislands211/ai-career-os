@@ -1,8 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.company_research import CompanyBrief as CompanyBrief
 from app.schemas.cover_letter import CoverLetterResult as CoverLetterResult
 from app.schemas.job_extraction import JobExtraction
 from app.schemas.resume_extraction import ResumeExtraction
@@ -79,8 +80,18 @@ class JobRead(BaseModel):
     url: str | None
     source: str | None
     raw_metadata: dict | None
+    company_brief: CompanyBrief | None = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("company_brief", mode="before")
+    @classmethod
+    def parse_company_brief(cls, value: object) -> CompanyBrief | None:
+        if value is None or isinstance(value, CompanyBrief):
+            return value
+        if isinstance(value, dict):
+            return CompanyBrief.model_validate(value)
+        return value
 
 
 class JobCreateRead(JobRead):
