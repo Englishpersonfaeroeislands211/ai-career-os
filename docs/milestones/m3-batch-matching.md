@@ -1,56 +1,43 @@
-# Milestone 3: Batch matching + scoring
+# Milestone 3 (archived): Batch matching + scoring
 
-**Status:** Done  
-**Concepts:** Comparative batch prompting, context engineering, background orchestration
+**Status:** Superseded — not part of the current product  
+**Superseded by:** [M3: Match on job insert](m3-match-on-intake.md)
 
-## Problem
+> This milestone was implemented and then removed from the product. The code and prompts remain in the repo for reference and experiments. Do not build new features on the batch API — it no longer exists.
 
-Users track multiple jobs but must analyze each one individually. Running N separate LLM calls is slow, expensive, and scores are not calibrated relative to each other.
+## What we built
 
-## Solution
+- Comparative batch prompt (`batch_match_analysis.txt`) — one LLM call for up to 12 jobs
+- `POST /match-analyses/batch` + home “Analyze all” UI
+- N+1 SQL fix via `_latest_analyses_by_job`
 
-**One comparative LLM call per batch** (up to 12 jobs), not one call per job:
+## Why we pivoted away
+
+1. **Product flow changed** — users add jobs one at a time; match runs at save, not in bulk.
+2. **Timeout at scale** — 10 full JDs in one batch timed out; led to tiered cascade experiments.
+3. **Complexity vs. value** — cascade (screen all → deep analyze top K) solved batch timeouts but the simpler answer was: **full match per job at intake**, which matches how people actually use the app.
+
+## What remains in the codebase
+
+| Artifact | Location | Used by product? |
+|----------|----------|------------------|
+| Batch match prompt | `app/prompts/batch_match_analysis.txt` | No |
+| Screen batch prompt | `app/prompts/batch_screen_match.txt` | No |
+| `analyze_matches_batch`, cascade runners | `app/services/matcher.py` | No |
+| `batch_matcher.py` | `app/services/batch_matcher.py` | No |
+| Unit tests | `tests/test_batch_matcher.py`, `tests/test_matcher.py` | Yes (regression) |
+
+**Cleanup ticket:** prune batch/cascade paths once match-on-intake evals are in place.
+
+## Historical reference — original design
+
+**One comparative LLM call per batch** (up to 12 jobs):
 
 ```
-POST /match-analyses/batch
-  → queue pending MatchAnalysis rows (2 SQL queries, no N+1)
-  → single background task: run_batch_match_analysis
-  → LLM sees resume once + all job_ids in shared context
+POST /match-analyses/batch  [removed]
+  → queue pending MatchAnalysis rows
+  → run_batch_match_analysis (single background task)
   → relative score calibration across the batch
-  → map results back to each MatchAnalysis row
 ```
 
-Single-job **Re-analyze** on job detail still uses the deep `match_analysis` prompt.
-
-## API
-
-`POST /api/v1/match-analyses/batch`
-
-```json
-{
-  "profile_id": "...",
-  "job_ids": null,
-  "skip_existing": true
-}
-```
-
-## AI engineering choices
-
-| Approach | Why |
-|----------|-----|
-| Batch comparative prompt | Model ranks jobs against the same resume in one context — scores are relative, not isolated |
-| Chunk size 12 | Keeps context predictable; larger pipelines split into few calls, not N |
-| Separate batch prompt | Lighter orchestration rules + job_id mapping; single-job prompt unchanged for deep dives |
-| One background task | Avoids N sequential FastAPI background tasks |
-
-## Completed
-
-- [x] `batch_match_analysis.txt` prompt + `BatchMatchResult` schema
-- [x] `analyze_matches_batch` / `run_batch_match_analysis`
-- [x] N+1 fix: `_latest_analyses_by_job` (one query)
-- [x] Home page: Analyze all / new / re-analyze with polling
-- [x] Unit tests
-
-## Next
-
-[M3.5 — Tiered matching cascade](m3.5-tiered-matching.md): compress job context, screen all jobs cheaply, full explain on top K only.
+See git history around `feat(jobs): run full match analysis when a job is saved` for the pivot commit.

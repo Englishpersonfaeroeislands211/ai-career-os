@@ -5,28 +5,30 @@
 ```mermaid
 flowchart TB
     subgraph inputs [Inputs]
-        Profile[Career Profile]
-        Jobs[Job Sources]
-        Feedback[User Feedback]
+        Resume[Resume PDF / paste]
+        JD[Job description paste]
+        Feedback[User edits + feedback]
     end
 
-    subgraph core [AI Core]
-        Understand[Understanding Layer]
-        Reason[Reasoning Layer]
-        Act[Action Layer]
-        Memory[Memory Layer]
+    subgraph core [AI Core — implemented]
+        Extract[Extraction layer]
+        Match[Match analysis]
     end
 
     subgraph infra [Infrastructure]
         API[FastAPI]
         DB[(PostgreSQL)]
-        Queue[Task Queue]
-        Obs[Observability]
+        BG[BackgroundTasks]
     end
 
-    inputs --> core
-    core --> infra
-    Memory --> DB
+    Resume --> Extract --> Profile[(Profile)]
+    JD --> Extract --> Job[(Job)]
+    Profile --> Match
+    Job --> Match
+    Match --> Analysis[(MatchAnalysis)]
+    API --> core
+    core --> DB
+    Match --> BG
 ```
 
 We build **inside-out**, not top-down. Not "agent framework first."
@@ -40,11 +42,36 @@ We build **inside-out**, not top-down. Not "agent framework first."
 | ORM | SQLAlchemy 2.0 (async) | Implemented |
 | Migrations | Alembic | Implemented |
 | Validation | Pydantic v2 | Implemented |
-| LLM | TBD (OpenAI / Anthropic / local) | Not yet |
-| Task queue | TBD | Not yet |
-| Observability | TBD | Not yet |
+| LLM | OpenAI-compatible client (cloud + local) | Implemented |
+| Background work | FastAPI `BackgroundTasks` | Implemented |
+| Frontend | Vite, React, TypeScript, Tailwind | Implemented |
+| Observability | Structured logging | Partial |
 
-## Data model (Milestone 1)
+## Request flow: match on job insert
+
+```mermaid
+sequenceDiagram
+    participant UI
+    participant API
+    participant DB
+    participant LLM
+
+    UI->>API: POST /jobs/parse-text
+    API->>LLM: JobExtraction
+    LLM-->>API: structured fields + match_summary
+    API-->>UI: review form
+
+    UI->>API: POST /jobs { profile_id, ... }
+    API->>DB: Job + MatchAnalysis pending
+    API-->>UI: job + match_analysis_id
+    API->>LLM: run_match_analysis (background)
+    LLM-->>DB: MatchResult → completed
+
+    UI->>API: GET /match-analyses (poll)
+    API-->>UI: score, strengths, gaps
+```
+
+## Data model
 
 ```
 Profile ──┐
@@ -54,7 +81,7 @@ Job ──────┘
 
 ### Profile
 
-Source of truth for matching. Stores raw resume text plus optional structured data.
+Source of truth for matching. Stores raw resume text plus structured extraction.
 
 ```python
 Profile
@@ -62,26 +89,26 @@ Profile
 ├── name: str
 ├── headline: str | None
 ├── resume_text: str          # raw input for LLM
-├── structured_data: JSONB    # parsed skills/experience (future)
+├── structured_data: JSONB    # ResumeExtraction snapshot
 ├── created_at, updated_at
 ```
 
 ### Job
 
-A job opportunity — manually added for now, discovered later.
+User-pasted opportunity with optional structured metadata from extraction.
 
 ```python
 Job
 ├── id: UUID
 ├── title, company, description
 ├── location, url, source
-├── raw_metadata: JSONB       # scraper/API payload (future)
+├── raw_metadata: JSONB       # JobExtraction fields, screening_card, requirements
 ├── created_at, updated_at
 ```
 
 ### MatchAnalysis
 
-Links a profile to a job. The `result` JSONB column holds structured LLM output.
+Links a profile to a job. The `result` JSONB column holds structured LLM output (`MatchResult`).
 
 ```python
 MatchAnalysis
@@ -89,12 +116,24 @@ MatchAnalysis
 ├── profile_id → Profile
 ├── job_id → Job
 ├── status: pending | completed | failed
-├── result: JSONB             # structured LLM output
+├── result: JSONB             # MatchResult
 ├── error: str | None
 ├── created_at
 ```
 
 Every analysis is persisted and auditable. This becomes the eval dataset.
+
+## Services
+
+| Service | Role |
+|---------|------|
+| `resume_structurer.py` | PDF text → `ResumeExtraction` |
+| `job_structurer.py` | Paste → `JobExtraction` |
+| `screening_card.py` | Compress job context for metadata |
+| `matcher.py` | Profile + Job → `MatchResult` (primary path: `run_match_analysis`) |
+| `llm/` | Provider-agnostic structured output client |
+
+**Note:** `matcher.py` also contains batch/cascade helpers from an archived experiment. They are not exposed via API.
 
 ## Design decisions
 
@@ -102,17 +141,19 @@ Every analysis is persisted and auditable. This becomes the eval dataset.
 
 `structured_data` (Profile) and `result` (MatchAnalysis) use JSONB so the LLM output schema can iterate without migrations. Once stable, promote hot fields to columns.
 
-**Why not separate tables for skills/gaps/strengths?** Premature — we don't know the schema yet. JSONB lets us learn.
-
 **When to promote:** When you query the same JSONB field in WHERE clauses or need foreign keys.
+
+### Match at intake, not in bulk
+
+Product runs **one full analysis per job save**. Avoids comparative batching complexity for the common single-job workflow. See [m3-match-on-intake.md](milestones/m3-match-on-intake.md).
 
 ### No auth yet
 
 Single-user local dev. Add authentication when multi-user or deployment becomes a requirement.
 
-### No service layer for CRUD
+### Prompts as files
 
-Routes talk to the DB directly. Fine at this scale. Extract to `services/` when AI logic lands — the matcher service will orchestrate LLM calls, validation, and persistence.
+`app/prompts/*.txt` — version-controlled, loaded via `load_prompt()`. Prompts are the API contract with the model.
 
 ### MatchAnalysis as a separate entity
 

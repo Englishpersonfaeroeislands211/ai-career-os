@@ -47,3 +47,15 @@ This repository should be educational. Thousands of developers may read it. Code
 4. **Production-ready patterns** — clean architecture, observability, testability
 5. **No premature abstraction** — prove the simple path first
 6. **No job scraping** — jobs are user-pasted only; optional URL stored as reference, never fetched
+
+## Current product (M3)
+
+The shipped loop focuses on **explainable matching at job intake**:
+
+1. Upload resume → structured profile with human review
+2. Paste job → extract fields → save triggers **automatic full match analysis**
+3. Home pipeline ranks opportunities; job detail shows score, strengths, gaps, and evidence
+
+Bulk batch matching was built and removed — one job at a time is the primary workflow. See [project-status.md](project-status.md).
+
+**Next capability:** resume optimization — turn match gaps into actionable improvements (M4).

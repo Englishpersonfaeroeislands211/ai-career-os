@@ -46,4 +46,4 @@ Returns `job_text` + `structured_data` (`JobExtraction`).
 
 ## Next
 
-Resume optimization — close gaps surfaced by match analysis.
+[M3: Match on job insert](m3-match-on-intake.md) — automatic full match when a job is saved. Then [M4: Resume optimization](../milestones/README.md#m4--resume-optimization-next).

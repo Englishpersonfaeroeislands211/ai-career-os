@@ -1,6 +1,6 @@
 # Milestone 1: Explain the Match
 
-**Status:** In progress  
+**Status:** Done  
 **Concepts:** Structured outputs, prompt engineering, context engineering, evals
 
 ## Problem
@@ -116,11 +116,11 @@ What goes *into* the prompt matters more than clever phrasing. Structure resume 
 
 Build the eval harness alongside the first LLM integration, not after. Match quality is the core product metric.
 
-## Open questions
+## Resolved (M1 shipped)
 
-- [ ] LLM provider: OpenAI, Anthropic, or local (Ollama)?
-- [ ] Output schema: final field list
-- [ ] Sync vs async execution for M1
+- LLM provider: OpenAI-compatible abstraction (cloud + local)
+- Output schema: `MatchResult` in `app/schemas/match_analysis.py`
+- Async execution: FastAPI `BackgroundTasks` for match analysis
 
 ## References
 

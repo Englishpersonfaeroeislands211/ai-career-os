@@ -1,23 +1,25 @@
 # AI Career OS — Documentation
 
-Documentation for the AI Career OS project — an open-source AI career assistant.
+Documentation for the AI Career OS project — an open-source, explainable AI career assistant.
 
-## Contents
+## Start here
 
 | Document | Description |
 |----------|-------------|
-| [Vision](vision.md) | What we're building and why |
-| [Architecture](architecture.md) | System design, decisions, and tradeoffs |
-| [Project Status](project-status.md) | Current implementation state and open questions |
+| [Project status](project-status.md) | **Current state, product flow, what's next** |
+| [Vision](vision.md) | Long-term product direction |
+| [Architecture](architecture.md) | System design and data model |
 | [Milestones](milestones/README.md) | Incremental build plan |
 
-## Current status
+## Current status (2026-07-28)
 
-**Milestone 1 — in progress**
+**M3 — Match on job insert** is complete.
 
-- [x] CRUD foundation (Profile, Job, MatchAnalysis)
-- [ ] Output schema for match explanation
-- [ ] LLM integration (structured outputs)
-- [ ] Eval harness
+- [x] M0 — Resume extraction
+- [x] M1 — Explain the match
+- [x] M2 — Job structuring from paste
+- [x] M3 — Automatic full match when a job is saved
 
-See [M1: Explain the Match](milestones/m1-explain-the-match.md) for details.
+**Next:** M4 — Resume optimization (tailor resume to close match gaps).
+
+See [project-status.md](project-status.md) for the full picture including pivot notes.

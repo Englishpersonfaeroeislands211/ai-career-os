@@ -1,124 +1,87 @@
 # Project Status
 
-Last updated: 2026-07-26
+Last updated: 2026-07-28
 
-## Overview
+## Where we are
 
-AI Career OS is in early development. The CRUD foundation is in place; the AI matching layer is next.
+AI Career OS has a working **resume → job → explainable match** loop. The product is intentionally narrow: paste your data, get evidence-backed fit analysis — no black-box auto-apply.
+
+**Current milestone:** M3 complete. **Next:** M4 — resume optimization.
+
+## Product flow (today)
+
+```mermaid
+flowchart LR
+    A[Upload resume PDF] --> B[Review extraction]
+    B --> C[(Profile)]
+    C --> D[Paste job description]
+    D --> E[Extract job fields]
+    E --> F[Save and analyze match]
+    F --> G[Full MatchAnalysis in background]
+    G --> H[Home pipeline ranked by score]
+    G --> I[Job detail: strengths, gaps, evidence]
+```
+
+1. **Onboarding** — PDF → LLM structured extraction → human review → save profile.
+2. **Add job** — paste JD → extract fields → **Save & analyze match** (sends `profile_id`).
+3. **Match runs automatically** — full `match_analysis` prompt, not a separate bulk step.
+4. **Home pipeline** — jobs ranked by match score; polls while analyses are pending.
+5. **Job detail** — deep dive; Re-analyze / Retry when needed.
 
 ## Implemented
 
-### Stack
+| Area | Status |
+|------|--------|
+| Resume PDF extraction + structured `ResumeExtraction` | Done |
+| Profile CRUD + settings (BYOM: cloud + local) | Done |
+| Job paste → `JobExtraction` + review UI | Done |
+| Explainable match (`MatchResult`: score, strengths, gaps, evidence) | Done |
+| Match on job create (`profile_id` → background analysis) | Done |
+| Home job pipeline with polling | Done |
+| Eval harness (resume, job extraction, match analysis fixtures) | Done |
+| Screening card + `match_summary` at job extract | Done (infra for future cost optimization) |
 
-- Python 3.12, FastAPI (async), uv (dependency management)
-- Vite + React + Tailwind (Match Explorer UI)
-- PostgreSQL 16, SQLAlchemy 2.0 (async), Alembic
-- Pydantic v2, Docker Compose
+## API surface (`/api/v1/`)
 
-### Data model
+| Resource | Key endpoints |
+|----------|----------------|
+| Profiles | CRUD, `POST /profiles/parse-resume` |
+| Jobs | CRUD, `POST /jobs/parse-text`, `POST /jobs` (optional `profile_id` → queues match) |
+| Match analyses | `POST /match-analyses` (manual re-analyze), list, get |
+| Settings | GET/PUT LLM provider config |
+| LLM | `POST /llm/models` |
 
-```
-Profile ──┐
-          ├── MatchAnalysis (status: pending → completed | failed)
-Job ──────┘
-```
+Interactive docs: http://127.0.0.1:8000/docs
 
-### API (`/api/v1/`)
+## Pivot history (why docs mention “batch”)
 
-| Resource | Endpoints |
-|----------|-----------|
-| Profiles | CRUD |
-| Jobs | CRUD |
-| Match analyses | Create, list, get |
+We briefly shipped **bulk batch matching** (one comparative LLM call for many jobs) and explored a **tiered cascade** (cheap screen → full analyze top K). At typical intake volume (one job at a time), that added UX complexity without enough benefit.
 
-`POST /api/v1/match-analyses` creates a record with `status: "pending"`. LLM integration is not yet wired.
+**Product decision:** run a **full detailed match when each job is saved**. Batch/cascade code remains in the repo for experiments but is not exposed in the API or UI.
 
-### Repository layout
+See [M3: Match on job insert](milestones/m3-match-on-intake.md) and [M3 batch (archived)](milestones/m3-batch-matching.md).
 
-```
-ai-career-os/
-├── app/
-│   ├── main.py
-│   ├── config.py
-│   ├── db/session.py
-│   ├── models/__init__.py       # Profile, Job, MatchAnalysis
-│   ├── schemas/__init__.py
-│   └── api/routes.py
-├── frontend/                    # Vite + React Match Explorer
-├── alembic/
-├── docs/
-├── docker-compose.yml
-├── Dockerfile
-├── pyproject.toml
-└── uv.lock
-```
+## What's next (M4+)
 
-## In progress
+| Priority | Milestone | Why |
+|----------|-----------|-----|
+| **Next** | [M4 — Resume optimization](milestones/README.md#m4-resume-optimization) | Close gaps surfaced by match analysis; first “action” beyond scoring |
+| Soon | Re-analyze on job update | JD edits should refresh match without manual retry |
+| Soon | Match-at-intake eval fixtures | Regression tests for the primary user path |
+| Later | Cover letter generation (M5) | Needs stable match + gap narrative |
+| Later | Job discovery (M7) | Official APIs only — no scraping |
+| Cleanup | Prune unused batch/cascade backend | After evals cover match-on-intake |
 
-| Component | Status |
-|-----------|--------|
-| Match output schema | Draft (see below) |
-| Matcher service (`app/services/matcher.py`) | Not started |
-| LLM provider integration | Not started |
-| Eval harness | Not started |
+## Intentionally deferred
+
+- Authentication (single-user local dev)
+- Vector DB / RAG (resume + JD fit in context today)
+- Agent frameworks
+- Auto-apply
+- Job URL fetching / scraping
 
 ## Open questions
 
-- [ ] LLM provider: OpenAI, Anthropic, or local (Ollama)?
-- [ ] Final shape of `MatchAnalysis.result` JSON schema
-- [ ] Sync vs async execution for match analysis (BackgroundTasks recommended for M1)
-
-## Draft match result schema
-
-Starting point for `MatchAnalysis.result`:
-
-```json
-{
-  "match_score": 0.72,
-  "recommendation": "apply",
-  "strengths": [
-    {
-      "point": "13+ years backend experience exceeds 8+ year requirement",
-      "evidence": "Resume: 'Senior Backend Engineer, 2012–present'"
-    }
-  ],
-  "gaps": [
-    {
-      "point": "No direct Kubernetes production experience mentioned",
-      "severity": "minor"
-    }
-  ],
-  "summary": "Strong backend match with minor infra gap. Recommend applying."
-}
-```
-
-Field definitions:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `match_score` | float (0–1) | Overall fit score |
-| `recommendation` | enum | `apply`, `maybe`, or `skip` |
-| `strengths` | array | Matching points with resume evidence |
-| `gaps` | array | Missing or weak areas with severity |
-| `summary` | string | Human-readable conclusion |
-
-## Deferred
-
-These are intentionally out of scope until the core matching loop is proven:
-
-- Agent frameworks
-- Vector DB / RAG
-- Multi-agent orchestration
-- Fine-tuning
-- Auto-apply
-- Job scraping
-- Authentication
-
-## Next steps
-
-1. Finalize `MatchAnalysis.result` schema as a Pydantic model
-2. Implement matcher service with structured LLM outputs
-3. Wire matcher into `POST /api/v1/match-analyses` via background task
-4. Add eval harness with 5–10 labeled test cases
-
-See [M1: Explain the Match](milestones/m1-explain-the-match.md) for the full plan.
+- [ ] Single LLM call for extract + match at paste time (latency vs. modularity)?
+- [ ] When to promote hot JSONB fields to relational columns?
+- [ ] Observability: trace LLM calls (latency, cost) in production?
