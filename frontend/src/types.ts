@@ -81,8 +81,10 @@ export interface MatchGap {
 }
 
 export interface MatchResult {
+  depth?: "screen" | "full";
   score: number;
   recommendation: "apply" | "maybe apply" | "do not apply";
+  reason?: string;
   strengths: MatchStrength[];
   gaps: MatchGap[];
   summary: string;
@@ -102,12 +104,18 @@ export interface JobCreate {
   location?: string;
   url?: string;
   raw_metadata?: Record<string, unknown> | null;
+  profile_id?: string;
+}
+
+export interface JobCreateResponse extends Job {
+  match_analysis_id?: string | null;
 }
 
 export interface JobExtraction {
   title: string;
   company: string;
   description: string;
+  match_summary: string;
   work_mode?: "remote" | "hybrid" | "on-site" | "flexible" | null;
   location?: string | null;
   employment_type?: string | null;

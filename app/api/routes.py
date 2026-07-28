@@ -10,6 +10,7 @@ from app.logging_config import get_logger
 from app.models import Job, MatchAnalysis, Profile
 from app.schemas import (
     JobCreate,
+    JobCreateRead,
     JobParseRead,
     JobParseRequest,
     JobRead,
@@ -27,6 +28,7 @@ from app.services.llm.base import LLMConfigurationError, LLMError
 from app.services.matcher import run_match_analysis
 from app.services.resume_parser import ResumeParseError, extract_text_from_pdf
 from app.services.resume_structurer import structure_resume
+from app.services.screening_card import attach_screening_card_to_metadata
 
 logger = get_logger(__name__)
 
@@ -145,13 +147,49 @@ async def delete_profile(profile_id: UUID, db: AsyncSession = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/jobs", response_model=JobRead, status_code=status.HTTP_201_CREATED)
-async def create_job(body: JobCreate, db: AsyncSession = Depends(get_db)):
-    job = Job(**body.model_dump())
+@router.post("/jobs", response_model=JobCreateRead, status_code=status.HTTP_201_CREATED)
+async def create_job(
+    body: JobCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    profile_id = body.profile_id
+    payload = body.model_dump(exclude={"profile_id"})
+    job = Job(**payload)
     db.add(job)
+    await db.flush()
+    job.raw_metadata = attach_screening_card_to_metadata(job.raw_metadata, job)
+
+    match_analysis_id: UUID | None = None
+    if profile_id:
+        profile = await db.get(Profile, profile_id)
+        if not profile:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        analysis = MatchAnalysis(
+            profile_id=profile_id,
+            job_id=job.id,
+            status="pending",
+        )
+        db.add(analysis)
+        await db.flush()
+        match_analysis_id = analysis.id
+
     await db.commit()
     await db.refresh(job)
-    return job
+
+    if match_analysis_id:
+        background_tasks.add_task(run_match_analysis, match_analysis_id)
+        logger.info(
+            "Queued match analysis %s for new job %s profile=%s",
+            match_analysis_id,
+            job.id,
+            profile_id,
+        )
+
+    return JobCreateRead(
+        **JobRead.model_validate(job).model_dump(),
+        match_analysis_id=match_analysis_id,
+    )
 
 
 @router.get("/jobs", response_model=list[JobRead])
@@ -207,6 +245,7 @@ async def update_job(job_id: UUID, body: JobUpdate, db: AsyncSession = Depends(g
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(job, field, value)
 
+    job.raw_metadata = attach_screening_card_to_metadata(job.raw_metadata, job)
     await db.commit()
     await db.refresh(job)
     return job

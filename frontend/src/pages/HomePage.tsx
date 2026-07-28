@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Job, MatchAnalysis } from "../types";
 import { JobBoard } from "../components/JobBoard";
 import { Layout } from "../components/Layout";
 import { useActiveProfile } from "../hooks/useActiveProfile";
-import { scoreFromResult, latestAnalysisForJob } from "../lib/matches";
+import { pendingAnalysesCount, scoreFromResult, latestAnalysisForJob } from "../lib/matches";
 import { Button } from "../components/ui";
 
 export function HomePage() {
@@ -13,6 +13,12 @@ export function HomePage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [analyses, setAnalyses] = useState<MatchAnalysis[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  const refreshAnalyses = useCallback(async () => {
+    if (!profile) return;
+    const analysisList = await api.matchAnalyses.list();
+    setAnalyses(analysisList.filter((a) => a.profile_id === profile.id));
+  }, [profile]);
 
   useEffect(() => {
     if (!loading && !profile) {
@@ -38,6 +44,28 @@ export function HomePage() {
     }
     load();
   }, [profile]);
+
+  const pendingCount = profile ? pendingAnalysesCount(analyses, profile.id) : 0;
+
+  useEffect(() => {
+    if (!profile || pendingCount === 0) return;
+
+    let cancelled = false;
+    async function poll() {
+      try {
+        await refreshAnalyses();
+      } catch (err) {
+        if (!cancelled) console.error(err);
+      }
+    }
+
+    const interval = window.setInterval(poll, 2000);
+    poll();
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [profile, pendingCount, refreshAnalyses]);
 
   if (loading || !profile) {
     return (
@@ -95,7 +123,9 @@ export function HomePage() {
             <div>
               <h3 className="text-lg font-semibold">Opportunities</h3>
               <p className="text-sm text-text-muted">
-                Match scores from your latest analyses, sorted by fit.
+                {pendingCount > 0
+                  ? `Analyzing ${pendingCount} job${pendingCount === 1 ? "" : "s"}…`
+                  : "Ranked by match score — each job is analyzed when you add it."}
               </p>
             </div>
             <Link to="/jobs/new">

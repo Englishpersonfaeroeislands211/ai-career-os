@@ -48,6 +48,7 @@ class JobCreate(BaseModel):
     url: str | None = Field(default=None, max_length=2048)
     source: str | None = Field(default=None, max_length=100)
     raw_metadata: dict | None = None
+    profile_id: UUID | None = None
 
 
 class JobUpdate(BaseModel):
@@ -73,6 +74,12 @@ class JobRead(BaseModel):
     raw_metadata: dict | None
     created_at: datetime
     updated_at: datetime
+
+
+class JobCreateRead(JobRead):
+    """Job create response — includes queued match analysis when profile_id was sent."""
+
+    match_analysis_id: UUID | None = None
 
 
 class JobParseRequest(BaseModel):

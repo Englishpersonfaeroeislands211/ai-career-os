@@ -46,4 +46,4 @@ Returns `job_text` + `structured_data` (`JobExtraction`).
 
 ## Next
 
-Batch matching + scoring — rank profile against all saved jobs.
+Resume optimization — close gaps surfaced by match analysis.

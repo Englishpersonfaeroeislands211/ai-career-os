@@ -115,3 +115,42 @@ def normalize_match_payload(data: dict[str, Any]) -> dict[str, Any]:
         "gaps": gaps,
         "summary": str(data.get("summary") or "").strip() or "No summary provided.",
     }
+
+
+def normalize_batch_match_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """Map batch LLM output onto BatchMatchResult."""
+    raw_matches = data.get("matches") or data.get("results") or data.get("job_matches") or []
+    matches: list[dict[str, Any]] = []
+    for item in raw_matches:
+        if not isinstance(item, dict):
+            continue
+        job_id = item.get("job_id")
+        if not job_id:
+            continue
+        matches.append({"job_id": job_id, **normalize_match_payload(item)})
+    return {"matches": matches}
+
+
+def normalize_screen_match_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """Map a single screening match onto ScreeningJobMatchResult fields."""
+    score = data.get("score", data.get("match_score"))
+    reason = str(data.get("reason") or data.get("summary") or "").strip()
+    return {
+        "score": _normalize_score(score),
+        "recommendation": _normalize_recommendation(data.get("recommendation")),
+        "reason": reason or "No screening reason provided.",
+    }
+
+
+def normalize_batch_screen_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """Map batch screen LLM output onto BatchScreeningResult."""
+    raw_matches = data.get("matches") or data.get("results") or []
+    matches: list[dict[str, Any]] = []
+    for item in raw_matches:
+        if not isinstance(item, dict):
+            continue
+        job_id = item.get("job_id")
+        if not job_id:
+            continue
+        matches.append({"job_id": job_id, **normalize_screen_match_payload(item)})
+    return {"matches": matches}

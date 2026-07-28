@@ -59,4 +59,11 @@ def evaluate_job_extraction(
                 f"got {extraction.location!r}"
             )
 
+    match_summary_contains = expected.get("match_summary_contains")
+    if match_summary_contains and match_summary_contains not in extraction.match_summary:
+        failures.append(
+            f"[{case_name}] expected match_summary to contain {match_summary_contains!r}, "
+            f"got {extraction.match_summary!r}"
+        )
+
     return failures

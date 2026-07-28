@@ -152,6 +152,14 @@ export function JobDetailPage() {
     ? (job.raw_metadata.requirements as string[])
     : [];
   const canReExtract = canExtractFromText(buildJobExtractSource(job));
+  const analysisPending = analysis?.status === "pending";
+  const showAnalyzeButton = !analysisPending;
+  const analyzeLabel =
+    analysis?.status === "failed"
+      ? "Retry analysis"
+      : analysis?.status === "completed"
+        ? "Re-analyze match"
+        : "Analyze match";
 
   return (
     <Layout subtitle={`${job.title} @ ${job.company}`}>
@@ -182,9 +190,11 @@ export function JobDetailPage() {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleAnalyze} loading={analyzing}>
-                {analysis ? "Re-analyze match" : "Analyze match"}
-              </Button>
+              {showAnalyzeButton && (
+                <Button onClick={handleAnalyze} loading={analyzing}>
+                  {analyzeLabel}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 onClick={handleReExtract}

@@ -5,5 +5,6 @@
   "min_requirements": 3,
   "must_include_requirements": ["Python", "FastAPI"],
   "work_mode": "remote",
-  "location_contains": "Remote"
+  "location_contains": "Remote",
+  "match_summary_contains": "Python"
 }

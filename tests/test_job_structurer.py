@@ -12,6 +12,7 @@ async def test_structure_job_calls_llm_client():
         title="Backend Engineer",
         company="Acme",
         description="Build Python APIs.",
+        match_summary="Backend role building Python APIs.",
         requirements=["Python"],
     )
     mock_client = AsyncMock()

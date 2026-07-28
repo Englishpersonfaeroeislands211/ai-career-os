@@ -24,6 +24,21 @@ export function recommendationVariant(
   return "default";
 }
 
+export function pendingAnalysesCount(analyses: MatchAnalysis[], profileId: string): number {
+  return analyses.filter((a) => a.profile_id === profileId && a.status === "pending").length;
+}
+
+export function jobsNeedingAnalysis(
+  jobs: { id: string }[],
+  analyses: MatchAnalysis[],
+  profileId: string,
+): number {
+  return jobs.filter((job) => {
+    const latest = latestAnalysisForJob(analyses, profileId, job.id);
+    return !latest || latest.status === "failed";
+  }).length;
+}
+
 export function recommendationLabel(recommendation: MatchResult["recommendation"] | undefined) {
   if (recommendation === "apply") return "Apply";
   if (recommendation === "maybe apply") return "Maybe";

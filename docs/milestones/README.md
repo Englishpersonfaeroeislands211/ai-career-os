@@ -8,7 +8,8 @@ Incremental build plan. Each milestone adds one capability and is validated befo
 |---|-----------|-------------|--------|
 | 1 | [Explain the Match](m1-explain-the-match.md) | Structured outputs, prompt engineering, evals | **Done** |
 | 2 | [Job structuring from paste](m2-job-intake.md) | Structured outputs, prompt engineering | **Done** |
-| 3 | Batch matching + scoring | Context engineering, model routing | **Next** |
+| 3 | [Batch matching + scoring](m3-batch-matching.md) | Background orchestration, polling UX | **Done** |
+| 3.5 | [Tiered matching cascade](m3.5-tiered-matching.md) | Context compression, cascade, model routing | **Next** |
 | 4 | Resume optimization | Reflection, iterative refinement | Planned |
 | 5 | Cover letter generation | Tone control, template + generation hybrid | Planned |
 | 6 | Company research | Tool calling, web search | Planned |

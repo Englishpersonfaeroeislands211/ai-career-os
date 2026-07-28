@@ -137,11 +137,22 @@ def normalize_job_payload(data: dict[str, Any]) -> dict[str, Any]:
     work_mode = _extract_work_mode(data)
     geographic = _extract_geographic_location(data)
     display_location = _build_display_location(work_mode, geographic)
+    description_text = description or "No description extracted."
+
+    match_summary = (
+        _as_str(data.get("match_summary"))
+        or _as_str(data.get("role_summary"))
+        or _as_str(data.get("summary"))
+    )
+    if not match_summary:
+        trimmed = description_text.strip()
+        match_summary = trimmed[:200] if trimmed else "Role summary not extracted."
 
     return {
         "title": _as_str(data.get("title")) or _as_str(data.get("job_title")) or "Unknown",
         "company": _as_str(data.get("company")) or _as_str(data.get("company_name")) or "Unknown",
-        "description": description or "No description extracted.",
+        "description": description_text,
+        "match_summary": match_summary,
         "work_mode": work_mode,
         "location": display_location,
         "employment_type": _as_str(data.get("employment_type")) or _as_str(data.get("job_type")),

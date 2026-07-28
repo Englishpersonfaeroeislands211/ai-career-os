@@ -1,5 +1,9 @@
-from app.schemas.match_analysis import MatchResult
-from app.services.match_analysis_normalize import normalize_match_payload
+from app.schemas.match_analysis import BatchMatchResult, BatchScreeningResult, MatchResult
+from app.services.match_analysis_normalize import (
+    normalize_batch_match_payload,
+    normalize_batch_screen_payload,
+    normalize_match_payload,
+)
 
 
 def test_normalize_match_score_from_fraction():
@@ -61,3 +65,41 @@ def test_match_result_validation():
     result = MatchResult.model_validate(normalized)
     assert result.score == 91.5
     assert result.gaps[0].severity == "high"
+
+
+def test_normalize_batch_match_payload():
+    payload = normalize_batch_match_payload(
+        {
+            "matches": [
+                {
+                    "job_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "score": 0.82,
+                    "recommendation": "apply",
+                    "strengths": [{"point": 8.0, "evidence": "Python experience."}],
+                    "gaps": [],
+                    "summary": "Strong fit.",
+                }
+            ]
+        }
+    )
+    result = BatchMatchResult.model_validate(payload)
+    assert len(result.matches) == 1
+    assert result.matches[0].score == 82.0
+
+
+def test_normalize_batch_screen_payload():
+    payload = normalize_batch_screen_payload(
+        {
+            "matches": [
+                {
+                    "job_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "score": 0.75,
+                    "recommendation": "apply",
+                    "reason": "Strong Python fit.",
+                }
+            ]
+        }
+    )
+    result = BatchScreeningResult.model_validate(payload)
+    assert result.matches[0].score == 75.0
+    assert result.matches[0].reason == "Strong Python fit."

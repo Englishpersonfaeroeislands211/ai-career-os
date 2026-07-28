@@ -10,11 +10,12 @@ import { Button, Card, ErrorBanner, Field, Input, Textarea } from "./ui";
 
 interface JobPanelProps {
   selectedId: string | null;
+  profileId: string | null;
   onSelect: (job: Job) => void;
   onSaved: (job: Job) => void;
 }
 
-export function JobPanel({ selectedId, onSelect, onSaved }: JobPanelProps) {
+export function JobPanel({ selectedId, profileId, onSelect, onSaved }: JobPanelProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [pasteText, setPasteText] = useState("");
   const [title, setTitle] = useState("");
@@ -147,6 +148,7 @@ export function JobPanel({ selectedId, onSelect, onSaved }: JobPanelProps) {
         location: location.trim() || undefined,
         url: url.trim() || undefined,
         raw_metadata: jobMetadata ?? undefined,
+        ...(!selectedId && profileId ? { profile_id: profileId } : {}),
       };
       const saved = selectedId
         ? await api.jobs.update(selectedId, payload)
@@ -187,7 +189,7 @@ export function JobPanel({ selectedId, onSelect, onSaved }: JobPanelProps) {
   return (
     <Card
       title="Job"
-      description="Paste a job posting — we extract fields locally via LLM (no URL fetching)"
+      description="Paste a job posting — we extract fields and run a full match analysis when you save"
       action={
         jobs.length > 0 ? (
           <select
@@ -273,7 +275,7 @@ export function JobPanel({ selectedId, onSelect, onSaved }: JobPanelProps) {
           loading={saving}
           disabled={!title.trim() || !company.trim() || !description.trim()}
         >
-          {selectedId ? "Update job" : "Save job"}
+          {selectedId ? "Update job" : "Save & analyze match"}
         </Button>
         {(selectedId || title || pasteText) && (
           <Button variant="ghost" onClick={handleNew}>

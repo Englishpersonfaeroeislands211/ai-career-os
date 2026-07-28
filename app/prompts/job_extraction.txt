@@ -11,6 +11,7 @@ Required JSON shape:
   "work_mode": "remote",
   "location": "Berlin, Germany",
   "description": "Full job description text with responsibilities and qualifications.",
+  "match_summary": "Senior backend role building Python payment APIs at scale for a global fintech platform.",
   "employment_type": "full-time",
   "salary_range": null,
   "requirements": [
@@ -49,6 +50,12 @@ description
 - The complete job description: role summary, responsibilities, qualifications.
 - Preserve meaningful structure with paragraphs or bullet lines.
 - Do not truncate.
+
+match_summary (IMPORTANT — for downstream match screening)
+- Exactly 1–2 sentences summarizing what this role is and what the candidate will do.
+- Focus on seniority, domain, and core tech — not boilerplate benefits or company fluff.
+- Max ~300 characters. Write it so a recruiter can compare this role to a resume quickly.
+- Example: "Senior backend role building Python payment APIs at scale for a global fintech platform."
 
 employment_type
 - e.g. full-time, part-time, contract, internship — or null if not stated.

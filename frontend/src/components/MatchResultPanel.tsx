@@ -19,20 +19,32 @@ const recommendationLabels: Record<
 
 function ResultContent({ result }: { result: MatchResult }) {
   const rec = recommendationLabels[result.recommendation];
+  const isScreen = result.depth === "screen";
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-6">
         <ScoreRing score={result.score} size="lg" />
-        <Badge variant={rec.variant}>{rec.label}</Badge>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={rec.variant}>{rec.label}</Badge>
+          <Badge variant={isScreen ? "info" : "default"}>
+            {isScreen ? "Screening" : "Full analysis"}
+          </Badge>
+        </div>
       </div>
+
+      {isScreen && result.reason && (
+        <p className="text-sm text-text-muted">
+          Deep analysis not run yet for this job — showing fast screening result.
+        </p>
+      )}
 
       <div>
         <h3 className="mb-2 text-sm font-medium text-text-muted">Summary</h3>
         <p className="text-sm leading-relaxed text-text">{result.summary}</p>
       </div>
 
-      {result.strengths.length > 0 && (
+      {!isScreen && (result.strengths?.length ?? 0) > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-medium text-success">Strengths</h3>
           <ul className="space-y-3">
@@ -51,7 +63,7 @@ function ResultContent({ result }: { result: MatchResult }) {
         </div>
       )}
 
-      {result.gaps.length > 0 && (
+      {!isScreen && (result.gaps?.length ?? 0) > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-medium text-warning">Gaps</h3>
           <ul className="space-y-3">

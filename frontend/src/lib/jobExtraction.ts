@@ -11,6 +11,7 @@ export function extractionMetadata(
     salary_range: extraction.salary_range ?? null,
     requirements: extraction.requirements,
     work_mode: extraction.work_mode ?? null,
+    match_summary: extraction.match_summary,
     ...(jobText ? { job_text: jobText } : {}),
   };
 }
