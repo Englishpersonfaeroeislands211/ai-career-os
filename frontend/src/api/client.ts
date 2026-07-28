@@ -1,4 +1,4 @@
-import type { Job, JobCreate, JobCreateResponse, JobParseResult, MatchAnalysis, Profile, ProfileCreate, ResumeOptimizationResult, ResumeParseResult, ResumeSuggestion } from "../types";
+import type { CoverLetterResult, Job, JobCreate, JobCreateResponse, JobParseResult, MatchAnalysis, Profile, ProfileCreate, ResumeOptimizationResult, ResumeParseResult, ResumeSuggestion } from "../types";
 import type { AppSettings, ListModelsRequest, ModelListResponse, SettingsUpdate } from "../types/settings";
 
 const BASE = "/api/v1";
@@ -117,6 +117,10 @@ export const api = {
         `/match-analyses/${analysisId}/resume-optimization`,
         { method: "POST" },
       ),
+    generateCoverLetter: (analysisId: string) =>
+      request<CoverLetterResult>(`/match-analyses/${analysisId}/cover-letter`, {
+        method: "POST",
+      }),
   },
 
   settings: {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import type { MatchAnalysis, ResumeOptimizationResult, ResumeSuggestion } from "../types";
+import { isFullMatch } from "../lib/matches";
 import { Badge, Button, Card, ErrorBanner } from "./ui";
 
 interface ResumeOptimizationPanelProps {
@@ -24,10 +25,7 @@ export function ResumeOptimizationPanel({
   const [applied, setApplied] = useState(false);
 
   const gaps = analysis.result?.gaps ?? [];
-  const canOptimize =
-    analysis.status === "completed" &&
-    analysis.result?.depth !== "screen" &&
-    gaps.length > 0;
+  const canOptimize = isFullMatch(analysis) && gaps.length > 0;
 
   async function handleGenerate() {
     setLoading(true);

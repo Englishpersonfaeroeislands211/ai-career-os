@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.cover_letter import CoverLetterResult as CoverLetterResult
 from app.schemas.job_extraction import JobExtraction
 from app.schemas.resume_extraction import ResumeExtraction
 from app.schemas.resume_optimization import (

@@ -105,6 +105,13 @@ export interface ResumeOptimizationResult {
   suggestions: ResumeSuggestion[];
 }
 
+export interface CoverLetterResult {
+  body: string;
+  tone: "professional" | "warm" | "concise";
+  highlights_used: string[];
+  critique_summary: string;
+}
+
 export interface ProfileCreate {
   name: string;
   headline?: string;

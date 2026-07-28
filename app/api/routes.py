@@ -11,6 +11,7 @@ from app.logging_config import get_logger
 from app.models import Job, MatchAnalysis, Profile
 from app.schemas import (
     ApplyResumeSuggestionsRequest,
+    CoverLetterResult,
     JobCreate,
     JobCreateRead,
     JobParseRead,
@@ -25,10 +26,14 @@ from app.schemas import (
     ResumeOptimizationResult,
     ResumeParseRead,
 )
+from app.services.cover_letter_generator import (
+    generate_cover_letter,
+    match_result_for_cover_letter,
+)
 from app.services.job_paste_parser import JobPasteParseError, prepare_job_post_text
 from app.services.job_structurer import structure_job
 from app.services.llm.base import LLMConfigurationError, LLMError
-from app.services.matcher import run_match_analysis
+from app.services.matcher import run_match_analysis, run_progressive_match_analysis
 from app.services.resume_optimizer import (
     match_result_from_analysis_payload,
     optimize_resume_for_match,
@@ -211,7 +216,7 @@ async def create_job(
     await db.refresh(job)
 
     if match_analysis_id:
-        background_tasks.add_task(run_match_analysis, match_analysis_id)
+        background_tasks.add_task(run_progressive_match_analysis, match_analysis_id)
         logger.info(
             "Queued match analysis %s for new job %s profile=%s",
             match_analysis_id,
@@ -378,6 +383,38 @@ async def create_resume_optimization(analysis_id: UUID, db: AsyncSession = Depen
 
     try:
         return await optimize_resume_for_match(db, profile, job, match_result)
+    except (LLMConfigurationError, LLMError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post(
+    "/match-analyses/{analysis_id}/cover-letter",
+    response_model=CoverLetterResult,
+)
+async def create_cover_letter(analysis_id: UUID, db: AsyncSession = Depends(get_db)):
+    analysis = await db.get(MatchAnalysis, analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Match analysis not found")
+    if analysis.status != "completed" or not analysis.result:
+        raise HTTPException(
+            status_code=400,
+            detail="Match analysis must be completed before generating a cover letter",
+        )
+
+    profile = await db.get(Profile, analysis.profile_id)
+    job = await db.get(Job, analysis.job_id)
+    if not profile or not job:
+        raise HTTPException(status_code=404, detail="Profile or job not found")
+
+    try:
+        match_result = match_result_for_cover_letter(analysis.result)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid match analysis result") from exc
+
+    try:
+        return await generate_cover_letter(db, profile, job, match_result)
     except (LLMConfigurationError, LLMError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 

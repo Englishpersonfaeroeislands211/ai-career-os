@@ -34,9 +34,7 @@ function ResultContent({ result }: { result: MatchResult }) {
       </div>
 
       {isScreen && result.reason && (
-        <p className="text-sm text-text-muted">
-          Deep analysis not run yet for this job — showing fast screening result.
-        </p>
+        <p className="text-sm text-text-muted">{result.reason}</p>
       )}
 
       <div>
@@ -107,6 +105,15 @@ function PendingState() {
   );
 }
 
+function DeepAnalysisPending() {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 text-sm">
+      <div className="size-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      <span className="text-text-muted">Running full analysis — strengths and gaps loading…</span>
+    </div>
+  );
+}
+
 export function MatchResultPanel({ analysis, profileName, jobTitle }: MatchResultPanelProps) {
   if (!analysis) {
     return (
@@ -125,6 +132,11 @@ export function MatchResultPanel({ analysis, profileName, jobTitle }: MatchResul
         ? "danger"
         : "info";
 
+  const screenPreview =
+    analysis.status === "pending" && analysis.result?.depth === "screen"
+      ? analysis.result
+      : null;
+
   return (
     <Card
       title="Match result"
@@ -135,7 +147,14 @@ export function MatchResultPanel({ analysis, profileName, jobTitle }: MatchResul
       }
       action={<Badge variant={statusVariant}>{analysis.status}</Badge>}
     >
-      {analysis.status === "pending" && <PendingState />}
+      {analysis.status === "pending" && !screenPreview && <PendingState />}
+
+      {screenPreview && (
+        <div className="space-y-6">
+          <ResultContent result={screenPreview} />
+          <DeepAnalysisPending />
+        </div>
+      )}
 
       {analysis.status === "failed" && (
         <div className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -144,7 +163,14 @@ export function MatchResultPanel({ analysis, profileName, jobTitle }: MatchResul
       )}
 
       {analysis.status === "completed" && analysis.result && (
-        <ResultContent result={analysis.result} />
+        <div className="space-y-4">
+          <ResultContent result={analysis.result} />
+          {analysis.error && (
+            <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+              {analysis.error}
+            </div>
+          )}
+        </div>
       )}
 
       {analysis.status === "completed" && !analysis.result && (

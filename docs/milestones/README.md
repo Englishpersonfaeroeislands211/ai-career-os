@@ -11,8 +11,8 @@ Incremental build plan. Each milestone adds one capability and is validated befo
 | 2 | [Job structuring from paste](m2-job-intake.md) | Structured outputs, prompt engineering | **Done** |
 | 3 | [Match on job insert](m3-match-on-intake.md) | Background tasks, intake-time matching | **Done** |
 | 4 | [Resume optimization](m4-resume-optimization.md) | Reflection, iterative refinement | **Done** |
-| 5 | Cover letter generation | Tone control, template + generation hybrid | **Next** |
-| 6 | Company research | Tool calling, web search | Planned |
+| 5 | [Progressive match + cover letter](m5-progressive-match-cover-letter.md) | Staged inference, reflection chain | **Done** |
+| 6 | Company research | Tool calling, web search | **Next** |
 | 7 | Job discovery | Official APIs, user-provided data (no scraping) | Planned |
 | 8 | Memory + feedback loop | Long-term memory, learning from feedback | Planned |
 | 9 | Interview preparation | Multi-step planning, structured curricula | Planned |
@@ -26,13 +26,13 @@ Milestones 4–10 are directional. Each depends on eval results from the previou
 |-----|-------------|---------|
 | [M3 batch matching (archived)](m3-batch-matching.md) | Bulk “Analyze all” with comparative LLM batching | Built, then **removed from product** — see [M3 match on intake](m3-match-on-intake.md) |
 
-## M5 — Cover letter generation (next)
+## M6 — Company research (next)
 
-**Problem:** After match analysis and optional resume tuning, users still need a tailored cover letter for strong-fit roles.
+**Problem:** Match analysis explains fit against the JD, but users lack employer context (culture, recent news, interview style).
 
-**Direction:** Generate from profile + job + match strengths/gaps; human review before copy/export.
+**Direction:** Tool-calling agent with web search; structured company brief attached to job detail.
 
-See [m4-resume-optimization.md](m4-resume-optimization.md) for the completed prior step.
+See [m5-progressive-match-cover-letter.md](m5-progressive-match-cover-letter.md) for the completed prior step.
 
 ## Milestone selection criteria
 

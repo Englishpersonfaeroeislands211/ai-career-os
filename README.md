@@ -300,6 +300,8 @@ Base path: `/api/v1`
 | PATCH | `/jobs/{id}` | Update job |
 | DELETE | `/jobs/{id}` | Delete job |
 | POST | `/match-analyses` | Manual re-analyze (background LLM matcher) |
+| POST | `/match-analyses/{id}/resume-optimization` | Gap-driven resume suggestions |
+| POST | `/match-analyses/{id}/cover-letter` | 3-pass cover letter generation |
 | GET | `/match-analyses/{id}` | Get analysis status + result |
 | GET | `/match-analyses` | List analyses |
 | GET | `/settings` | Get LLM provider config |
@@ -320,7 +322,8 @@ Full interactive docs: http://127.0.0.1:8000/docs
 | **M2** Job intake | Done | Paste JD → structured extraction → review |
 | **M3** Match on job insert | Done | Full analysis automatically when a job is saved |
 | **M4** Resume optimization | Done | Gap-driven suggestions with review before apply |
-| **M5** Cover letters | **Next** | Personalized outreach from match narrative |
+| **M5** Progressive match + cover letter | Done | Fast screen at intake; 3-pass cover letter chain |
+| **M6** Company research | **Next** | Employer context via tool calling |
 
 Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/project-status.md](docs/project-status.md)
 
@@ -351,7 +354,7 @@ Contributions welcome — especially around:
 
 - LLM provider adapters (Anthropic native structured output, Google Gemini)
 - Extraction and match quality — eval fixtures (sample resumes/jobs + expected fields)
-- Resume optimization (M4)
+- Resume optimization and cover letter (M4–M5)
 - Documentation and DX improvements
 
 ### Commit messages

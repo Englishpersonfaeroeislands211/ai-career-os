@@ -15,6 +15,19 @@ export function scoreFromResult(result: MatchResult | null | undefined): number 
   return result.score;
 }
 
+export function hasScreenPreview(analysis: MatchAnalysis | null | undefined): boolean {
+  return analysis?.status === "pending" && analysis.result?.depth === "screen";
+}
+
+export function hasMatchResult(analysis: MatchAnalysis | null | undefined): boolean {
+  if (!analysis?.result) return false;
+  return analysis.status === "completed" || hasScreenPreview(analysis);
+}
+
+export function isFullMatch(analysis: MatchAnalysis | null | undefined): boolean {
+  return analysis?.status === "completed" && analysis.result?.depth !== "screen";
+}
+
 export function recommendationVariant(
   recommendation: MatchResult["recommendation"] | undefined,
 ): "success" | "warning" | "danger" | "default" {

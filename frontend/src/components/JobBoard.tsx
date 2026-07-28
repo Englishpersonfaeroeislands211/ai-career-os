@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Job, MatchAnalysis } from "../types";
 import {
+  hasMatchResult,
   latestAnalysisForJob,
   recommendationLabel,
   recommendationVariant,
@@ -49,11 +50,11 @@ export function JobBoard({ jobs, analyses, profileId }: JobBoardProps) {
       <ul className="divide-y divide-border">
         {sorted.map((job) => {
           const analysis = latestAnalysisForJob(analyses, profileId, job.id);
-          const score =
-            analysis?.status === "completed" ? scoreFromResult(analysis.result) : null;
-          const rec =
-            analysis?.status === "completed" ? analysis.result?.recommendation : undefined;
+          const score = hasMatchResult(analysis) ? scoreFromResult(analysis?.result) : null;
+          const rec = hasMatchResult(analysis) ? analysis?.result?.recommendation : undefined;
           const recLabel = recommendationLabel(rec);
+          const pendingFull =
+            analysis?.status === "pending" && analysis.result?.depth !== "screen";
 
           return (
             <li key={job.id}>
@@ -69,7 +70,7 @@ export function JobBoard({ jobs, analyses, profileId }: JobBoardProps) {
                   </p>
                 </div>
                 <div className="flex md:justify-center">
-                  {analysis?.status === "pending" ? (
+                  {pendingFull ? (
                     <Badge variant="info">Analyzing…</Badge>
                   ) : analysis?.status === "failed" ? (
                     <Badge variant="danger">Failed</Badge>

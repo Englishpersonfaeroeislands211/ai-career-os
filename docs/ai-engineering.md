@@ -22,8 +22,10 @@ flowchart LR
     subgraph llm [LLM tasks]
         RE[ResumeExtraction]
         JE[JobExtraction]
+        SM[ScreenMatch]
         MA[MatchResult]
         RO[ResumeOptimizationResult]
+        CL[CoverLetter chain]
     end
 
     subgraph quality [Quality layer]
@@ -36,7 +38,10 @@ flowchart LR
     JD --> JE
     RE --> MA
     JE --> MA
+    JE --> SM
+    SM --> MA
     MA --> RO
+    MA --> CL
 
     RE --> N
     JE --> N
@@ -53,7 +58,11 @@ flowchart LR
 | Resume extraction | `ResumeExtraction` | `resume_extraction.txt` | `resume_extraction_normalize.py` |
 | Job extraction | `JobExtraction` | `job_extraction.txt` | `job_extraction_normalize.py` |
 | Match analysis | `MatchResult` | `match_analysis.txt` | `match_analysis_normalize.py` |
+| Screen match | `BatchScreeningResult` | `batch_screen_match.txt` | — |
 | Resume optimization | `ResumeOptimizationResult` | `resume_optimization.txt` | `resume_optimization_normalize.py` |
+| Cover letter (draft) | `CoverLetterDraft` | `cover_letter_draft.txt` | — |
+| Cover letter (critique) | `CoverLetterCritique` | `cover_letter_critique.txt` | — |
+| Cover letter (revise) | `CoverLetterResult` | `cover_letter_revise.txt` | — |
 
 Each task follows the same pattern:
 
@@ -125,7 +134,8 @@ What goes into the prompt matters more than clever phrasing:
 - **Match analysis** — structured resume JSON + full JD (not raw dump when structured data exists).
 - **Job extraction** — normalized paste text from `job_paste_parser.py` (HTML → plain text locally).
 - **Resume optimization** — resume + job + match gaps + summary so suggestions target measured weaknesses.
-- **Screening cards** — compressed `match_summary` at job intake for future cost optimization.
+- **Cover letter chain** — draft → critique → revise; each pass gets full profile, job, and match context.
+- **Screening cards** — compressed `match_summary` at job intake for fast progressive match at save time.
 
 ## What we deliberately avoid
 

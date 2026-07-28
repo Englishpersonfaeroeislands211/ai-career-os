@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Job, JobExtraction, MatchAnalysis } from "../types";
 import { Layout } from "../components/Layout";
+import { CoverLetterPanel } from "../components/CoverLetterPanel";
 import { MatchResultPanel } from "../components/MatchResultPanel";
 import { ResumeOptimizationPanel } from "../components/ResumeOptimizationPanel";
 import { useActiveProfile } from "../hooks/useActiveProfile";
@@ -285,6 +286,8 @@ export function JobDetailPage() {
             onReAnalyze={handleAnalyze}
           />
         )}
+
+        {analysis && <CoverLetterPanel analysis={analysis} />}
       </main>
     </Layout>
   );
