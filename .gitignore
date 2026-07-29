@@ -14,3 +14,6 @@ pgdata/
 
 # Cursor local memory (private, not for public repo)
 .cursor/
+
+# Generated on `bun run dev` from http://127.0.0.1:8000/openapi.json
+frontend/src/types/api.generated.ts

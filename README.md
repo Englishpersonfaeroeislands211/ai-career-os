@@ -145,11 +145,15 @@ OpenAPI docs: http://127.0.0.1:8000/docs
 
 ### 4. Frontend
 
+Start the backend first (step 3), then:
+
 ```bash
 cd frontend
 bun install
 bun run dev
 ```
+
+`bun run dev` fetches `http://127.0.0.1:8000/openapi.json` and writes gitignored `src/types/api.generated.ts`. Hand-maintained types in `types.ts` remain the default in app code.
 
 App: http://127.0.0.1:5173
 
@@ -253,15 +257,6 @@ uv run pre-commit run --all-files   # verify setup
 ```bash
 cd frontend && bun run build
 ```
-
-Regenerate TypeScript types from the backend OpenAPI schema:
-
-```bash
-uv run python scripts/export_openapi.py
-cd frontend && bun run generate:api-types
-```
-
-Generated types live in `frontend/src/types/api.generated.ts` (optional — hand-maintained types in `types.ts` remain the default).
 
 ### Docker (API + DB)
 

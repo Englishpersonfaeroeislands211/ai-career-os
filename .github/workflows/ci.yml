@@ -24,6 +24,32 @@ jobs:
       - name: Ruff format
         run: uv run ruff format --check app tests scripts alembic
 
+  openapi:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Generate API types from running API
+        run: |
+          uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          server_pid=$!
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/health && break
+            sleep 1
+          done
+          cd frontend && bun install --frozen-lockfile && bun run generate:api-types
+          kill "$server_pid"
+
   test:
     runs-on: ubuntu-latest
     needs: lint
