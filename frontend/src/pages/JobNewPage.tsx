@@ -1,9 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { PageLoader } from "../components/AiLoadingState";
 import { JobIntakeSteps } from "../components/JobIntakeSteps";
 import { JobPasteZone } from "../components/JobPasteZone";
 import { Layout } from "../components/Layout";
-import { useActiveProfile } from "../hooks/useActiveProfile";
+import { useProfileRoute } from "../components/RequireProfileLayout";
 import type { JobParseResult } from "../types";
 
 interface JobNewLocationState {
@@ -20,19 +19,7 @@ export function JobNewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const pasteText = (location.state as JobNewLocationState | null)?.pasteText;
-  const { profile, loading, requireProfile } = useActiveProfile();
-
-  if (!loading && !profile) {
-    requireProfile();
-  }
-
-  if (loading || !profile) {
-    return (
-      <Layout title="Add job" subtitle="Paste a job description to analyze">
-        <PageLoader variant="page" />
-      </Layout>
-    );
-  }
+  const { profile } = useProfileRoute();
 
   function handleParsed(result: JobParseResult) {
     navigate("/jobs/new/review", { state: { parsed: result } });

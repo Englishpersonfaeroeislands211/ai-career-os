@@ -5,7 +5,7 @@ import type { JobExtraction, JobParseResult } from "../types";
 import { extractionMetadata } from "../lib/jobExtraction";
 import { JobIntakeSteps } from "../components/JobIntakeSteps";
 import { Layout } from "../components/Layout";
-import { useActiveProfile } from "../hooks/useActiveProfile";
+import { useProfileRoute } from "../components/RequireProfileLayout";
 import { Badge, Button, ErrorBanner, Field, Input, Textarea } from "../components/ui";
 
 interface JobReviewLocationState {
@@ -22,7 +22,7 @@ export function JobReviewPage() {
   const location = useLocation();
   const state = location.state as JobReviewLocationState | null;
   const parsed = state?.parsed;
-  const { profile, loading, requireProfile } = useActiveProfile();
+  const { profile } = useProfileRoute();
 
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -37,10 +37,6 @@ export function JobReviewPage() {
   const [showDescription, setShowDescription] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!loading && !profile) requireProfile();
-  }, [loading, profile, requireProfile]);
 
   useEffect(() => {
     if (!parsed) {
@@ -59,7 +55,7 @@ export function JobReviewPage() {
     setJobMetadata(extractionMetadata(extraction, parsed.job_text));
   }, [parsed, navigate]);
 
-  if (!parsed || loading || !profile) {
+  if (!parsed) {
     return (
       <Layout title="Add job" subtitle="Review extracted details">
         <div className="mx-auto max-w-2xl animate-pulse space-y-4 py-12">

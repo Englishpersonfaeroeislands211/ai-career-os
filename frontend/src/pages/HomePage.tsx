@@ -1,34 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import type { Job, MatchAnalysis } from "../types";
+import type { Job } from "../types";
 import { JobBoard } from "../components/JobBoard";
 import { Layout } from "../components/Layout";
-import { AiLoadingState, PageLoader } from "../components/AiLoadingState";
-import { useActiveProfile } from "../hooks/useActiveProfile";
+import { PageLoader } from "../components/AiLoadingState";
+import { useProfileRoute } from "../components/RequireProfileLayout";
+import { usePolling } from "../hooks/usePolling";
 import { pendingAnalysesCount, scoreFromResult, latestAnalysisForJob } from "../lib/matches";
 import { Button } from "../components/ui";
+import type { MatchAnalysis } from "../types";
 
 export function HomePage() {
-  const { profile, loading, requireProfile } = useActiveProfile();
+  const { profile } = useProfileRoute();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [analyses, setAnalyses] = useState<MatchAnalysis[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const refreshAnalyses = useCallback(async () => {
-    if (!profile) return;
     const analysisList = await api.matchAnalyses.list();
     setAnalyses(analysisList.filter((a) => a.profile_id === profile.id));
-  }, [profile]);
+  }, [profile.id]);
 
   useEffect(() => {
-    if (!loading && !profile) {
-      requireProfile();
-    }
-  }, [loading, profile, requireProfile]);
-
-  useEffect(() => {
-    if (!profile) return;
     async function load() {
       try {
         const [jobList, analysisList] = await Promise.all([
@@ -36,7 +30,7 @@ export function HomePage() {
           api.matchAnalyses.list(),
         ]);
         setJobs(jobList);
-        setAnalyses(analysisList.filter((a) => a.profile_id === profile!.id));
+        setAnalyses(analysisList.filter((a) => a.profile_id === profile.id));
       } catch (err) {
         console.error(err);
       } finally {
@@ -44,31 +38,12 @@ export function HomePage() {
       }
     }
     load();
-  }, [profile]);
+  }, [profile.id]);
 
-  const pendingCount = profile ? pendingAnalysesCount(analyses, profile.id) : 0;
+  const pendingCount = pendingAnalysesCount(analyses, profile.id);
+  usePolling(refreshAnalyses, pendingCount > 0);
 
-  useEffect(() => {
-    if (!profile || pendingCount === 0) return;
-
-    let cancelled = false;
-    async function poll() {
-      try {
-        await refreshAnalyses();
-      } catch (err) {
-        if (!cancelled) console.error(err);
-      }
-    }
-
-    const interval = window.setInterval(poll, 2000);
-    poll();
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [profile, pendingCount, refreshAnalyses]);
-
-  if (loading || !profile) {
+  if (dataLoading) {
     return (
       <Layout title="Pipeline" subtitle="Your job opportunities">
         <PageLoader variant="page" />
@@ -132,11 +107,7 @@ export function HomePage() {
             </Link>
           </div>
 
-          {dataLoading ? (
-            <AiLoadingState variant="page" size="md" />
-          ) : (
-            <JobBoard jobs={jobs} analyses={analyses} profileId={profile.id} />
-          )}
+          <JobBoard jobs={jobs} analyses={analyses} profileId={profile.id} />
         </section>
       </div>
     </Layout>

@@ -1,24 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ResumeParseResult } from "../types";
 import { Layout } from "../components/Layout";
-import { PageLoader } from "../components/AiLoadingState";
 import { parseStructuredData, StructuredProfileView } from "../components/StructuredProfileView";
 import { ResumeUploadZone } from "../components/ResumeUploadZone";
-import { useActiveProfile } from "../hooks/useActiveProfile";
+import { useProfileRoute } from "../components/RequireProfileLayout";
 import { api } from "../api/client";
 import { Button, ErrorBanner } from "../components/ui";
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { profile, loading, requireProfile } = useActiveProfile();
+  const { profile } = useProfileRoute();
   const [showUpload, setShowUpload] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!loading && !profile) requireProfile();
-  }, [loading, profile, requireProfile]);
 
   function handleParsed(parsed: ResumeParseResult) {
     if (!profile) return;
@@ -43,14 +38,6 @@ export function ProfilePage() {
     } finally {
       setDownloading(false);
     }
-  }
-
-  if (loading || !profile) {
-    return (
-      <Layout title="Profile" subtitle="Your career data">
-        <PageLoader variant="page" />
-      </Layout>
-    );
   }
 
   const structured = parseStructuredData(profile.structured_data);

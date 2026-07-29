@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { Job, JobExtraction, MatchAnalysis } from "../types";
+import type { JobExtraction } from "../types";
 import { AiLoadingState, PageLoader } from "../components/AiLoadingState";
 import { Layout } from "../components/Layout";
 import { JobDetailTabs } from "../components/JobDetailTabs";
-import { useActiveProfile } from "../hooks/useActiveProfile";
-import { latestAnalysisForJob } from "../lib/matches";
+import { useProfileRoute } from "../components/RequireProfileLayout";
+import { useJobDetail } from "../hooks/useJobDetail";
+import { useMatchAnalysis } from "../hooks/useMatchAnalysis";
 import {
   buildJobExtractSource,
   canExtractFromText,
@@ -31,9 +32,13 @@ export function JobDetailPage() {
     matchAnalysisId: detailState?.matchAnalysisId,
   });
   const matchSectionRef = useRef<HTMLElement>(null);
-  const { profile, loading: profileLoading, requireProfile } = useActiveProfile();
-  const [job, setJob] = useState<Job | null>(null);
-  const [analysis, setAnalysis] = useState<MatchAnalysis | null>(null);
+  const { profile } = useProfileRoute();
+  const { job, setJob, matchAnalysisId, setMatchAnalysisId, loading } = useJobDetail(
+    id,
+    profile.id,
+    { initialAnalysisId: intakeRef.current.matchAnalysisId },
+  );
+  const { analysis, setAnalysis } = useMatchAnalysis(matchAnalysisId);
   const [analyzing, setAnalyzing] = useState(false);
   const [reExtracting, setReExtracting] = useState(false);
   const [applyingExtraction, setApplyingExtraction] = useState(false);
@@ -42,45 +47,6 @@ export function JobDetailPage() {
     jobText: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!profileLoading && !profile) requireProfile();
-  }, [profileLoading, profile, requireProfile]);
-
-  useEffect(() => {
-    if (!id || !profile) return;
-    async function load() {
-      try {
-        const jobData = await api.jobs
-          .list()
-          .then((jobs) => jobs.find((j) => j.id === id) ?? null);
-        if (!jobData) {
-          navigate("/", { replace: true });
-          return;
-        }
-        setJob(jobData);
-
-        const matchAnalysisId = intakeRef.current.matchAnalysisId;
-        if (matchAnalysisId) {
-          try {
-            setAnalysis(await api.matchAnalyses.get(matchAnalysisId));
-            return;
-          } catch {
-            /* fall through to list lookup */
-          }
-        }
-
-        const analyses = await api.matchAnalyses.list();
-        setAnalysis(latestAnalysisForJob(analyses, profile!.id, jobData.id) ?? null);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [id, profile, navigate]);
 
   useEffect(() => {
     if (!intakeRef.current.focusMatch || loading) return;
@@ -89,32 +55,13 @@ export function JobDetailPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [loading, location.pathname, navigate]);
 
-  useEffect(() => {
-    if (!analysis || analysis.status !== "pending") return;
-    const analysisId = analysis.id;
-    let cancelled = false;
-    async function poll() {
-      try {
-        const updated = await api.matchAnalyses.get(analysisId);
-        if (!cancelled) setAnalysis(updated);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    const interval = window.setInterval(poll, 2000);
-    poll();
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [analysis?.id, analysis?.status]);
-
   async function handleAnalyze() {
-    if (!profile || !job) return;
+    if (!job) return;
     setAnalyzing(true);
     setError(null);
     try {
       const created = await api.matchAnalyses.create(profile.id, job.id);
+      setMatchAnalysisId(created.id);
       setAnalysis(created);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start analysis");
@@ -171,7 +118,7 @@ export function JobDetailPage() {
     }
   }
 
-  if (profileLoading || loading || !profile || !job) {
+  if (loading || !job) {
     return (
       <Layout title="Job" subtitle="Opportunity details">
         <PageLoader variant="page" />
