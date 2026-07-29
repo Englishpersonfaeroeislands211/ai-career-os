@@ -19,12 +19,10 @@ from app.schemas import (
     JobUpdate,
 )
 from app.services.company_research import company_brief_to_storage, research_company
-from app.services.job_paste_parser import JobPasteParseError, prepare_job_post_text
+from app.services.job_paste_parser import prepare_job_post_text
 from app.services.job_structurer import structure_job
-from app.services.llm.base import LLMConfigurationError, LLMError
 from app.services.match import run_progressive_match_analysis
 from app.services.screening_card import attach_screening_card_to_metadata
-from app.services.search.base import SearchError
 
 logger = get_logger(__name__)
 
@@ -85,23 +83,10 @@ async def list_jobs(db: AsyncSession = Depends(get_db)):
 @router.post("/jobs/parse-text", response_model=JobParseRead)
 async def parse_job_text(body: JobParseRequest, db: AsyncSession = Depends(get_db)):
     logger.info("Parsing pasted job posting (%d chars)", len(body.text))
-
-    try:
-        job_text = await asyncio.to_thread(prepare_job_post_text, body.text)
-    except JobPasteParseError as exc:
-        logger.warning("Job paste parse failed: %s", exc)
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    job_text = await asyncio.to_thread(prepare_job_post_text, body.text)
 
     logger.info("Structuring job posting (%d chars after normalize)", len(job_text))
-
-    try:
-        extraction = await structure_job(db, job_text)
-    except LLMConfigurationError as exc:
-        logger.warning("Job structuring skipped — provider not configured: %s", exc)
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except LLMError as exc:
-        logger.error("Job structuring failed: %s", exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    extraction = await structure_job(db, job_text)
 
     logger.info(
         "Structured job posting — title=%r, company=%r, requirements=%d",
@@ -146,13 +131,7 @@ async def create_company_research(
     job: Job = Depends(get_job_or_404),
     db: AsyncSession = Depends(get_db),
 ):
-    try:
-        brief = await research_company(db, job)
-    except SearchError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    except (LLMConfigurationError, LLMError) as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-
+    brief = await research_company(db, job)
     job.company_brief = company_brief_to_storage(brief)
     await db.commit()
     await db.refresh(job)

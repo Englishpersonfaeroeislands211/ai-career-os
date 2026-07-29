@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.exception_handlers import register_exception_handlers
 from app.api.jobs import router as jobs_router
 from app.api.llm import router as llm_router
 from app.api.match_analyses import router as match_analyses_router
@@ -11,6 +12,7 @@ from app.api.settings import router as settings_router
 from app.config import settings
 from app.db.session import engine
 from app.logging_config import RequestLoggingMiddleware, get_logger, setup_logging
+from app.services.http_client import close_http_client, init_http_client
 
 setup_logging()
 logger = get_logger(__name__)
@@ -19,12 +21,15 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s", settings.app_name)
+    await init_http_client()
     yield
-    logger.info("Shutting down — disposing DB engine")
+    logger.info("Shutting down — disposing DB engine and HTTP client")
+    await close_http_client()
     await engine.dispose()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+register_exception_handlers(app)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,

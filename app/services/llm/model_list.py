@@ -1,8 +1,8 @@
 import httpx
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.exceptions import ModelListError
 from app.logging_config import get_logger
 from app.schemas.providers import (
     DEFAULT_BASE_URLS,
@@ -12,6 +12,7 @@ from app.schemas.providers import (
     PROVIDER_REGISTRY,
     LLMProvider,
 )
+from app.services.http_client import MODEL_LIST_TIMEOUT, get_http_client
 from app.services.llm.urls import normalize_openai_base_url
 from app.services.settings_service import get_settings_row
 
@@ -64,34 +65,25 @@ async def _fetch_openai_compatible_models(base_url: str, api_key: str | None) ->
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
+    client = get_http_client()
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(url, headers=headers)
+        response = await client.get(url, headers=headers, timeout=MODEL_LIST_TIMEOUT)
     except httpx.ConnectError as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Could not connect to {base_url}. Is the server running?",
-        ) from exc
+        raise ModelListError(f"Could not connect to {base_url}. Is the server running?") from exc
     except httpx.TimeoutException as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Timed out connecting to {base_url}.",
-        ) from exc
+        raise ModelListError(f"Timed out connecting to {base_url}.") from exc
 
     if response.status_code >= 400:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Provider returned {response.status_code}: {response.text[:200]}",
-        )
+        raise ModelListError(f"Provider returned {response.status_code}: {response.text[:200]}")
 
     payload = response.json()
     if isinstance(payload, dict) and payload.get("error"):
         error = payload["error"]
         message = error if isinstance(error, str) else str(error)
-        raise HTTPException(status_code=502, detail=f"Provider error: {message}")
+        raise ModelListError(f"Provider error: {message}")
     data = payload.get("data", payload)
     if not isinstance(data, list):
-        raise HTTPException(status_code=502, detail="Unexpected models response format")
+        raise ModelListError("Unexpected models response format")
 
     ids: list[str] = []
     for item in data:
@@ -101,7 +93,7 @@ async def _fetch_openai_compatible_models(base_url: str, api_key: str | None) ->
             ids.append(item)
 
     if not ids:
-        raise HTTPException(status_code=502, detail="No models returned by provider")
+        raise ModelListError("No models returned by provider")
 
     return _filter_model_ids(ids)
 
@@ -111,41 +103,43 @@ async def _fetch_anthropic_models(api_key: str) -> list[str]:
         "x-api-key": api_key,
         "anthropic-version": "2023-06-01",
     }
+    client = get_http_client()
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(ANTHROPIC_MODELS_URL, headers=headers)
+        response = await client.get(
+            ANTHROPIC_MODELS_URL,
+            headers=headers,
+            timeout=MODEL_LIST_TIMEOUT,
+        )
     except httpx.ConnectError as exc:
-        raise HTTPException(status_code=502, detail="Could not connect to Anthropic.") from exc
+        raise ModelListError("Could not connect to Anthropic.") from exc
     except httpx.TimeoutException as exc:
-        raise HTTPException(status_code=502, detail="Timed out connecting to Anthropic.") from exc
+        raise ModelListError("Timed out connecting to Anthropic.") from exc
 
     if response.status_code >= 400:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Anthropic returned {response.status_code}: {response.text[:200]}",
-        )
+        raise ModelListError(f"Anthropic returned {response.status_code}: {response.text[:200]}")
 
     data = response.json().get("data", [])
     ids = [str(item["id"]) for item in data if isinstance(item, dict) and item.get("id")]
     if not ids:
-        raise HTTPException(status_code=502, detail="No models returned by Anthropic")
+        raise ModelListError("No models returned by Anthropic")
     return sorted(ids)
 
 
 async def _fetch_google_models(api_key: str) -> list[str]:
+    client = get_http_client()
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(GOOGLE_MODELS_URL, params={"key": api_key})
+        response = await client.get(
+            GOOGLE_MODELS_URL,
+            params={"key": api_key},
+            timeout=MODEL_LIST_TIMEOUT,
+        )
     except httpx.ConnectError as exc:
-        raise HTTPException(status_code=502, detail="Could not connect to Google.") from exc
+        raise ModelListError("Could not connect to Google.") from exc
     except httpx.TimeoutException as exc:
-        raise HTTPException(status_code=502, detail="Timed out connecting to Google.") from exc
+        raise ModelListError("Timed out connecting to Google.") from exc
 
     if response.status_code >= 400:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Google returned {response.status_code}: {response.text[:200]}",
-        )
+        raise ModelListError(f"Google returned {response.status_code}: {response.text[:200]}")
 
     models = response.json().get("models", [])
     ids: list[str] = []
@@ -159,7 +153,7 @@ async def _fetch_google_models(api_key: str) -> list[str]:
             ids.append(name)
 
     if not ids:
-        raise HTTPException(status_code=502, detail="No models returned by Google")
+        raise ModelListError("No models returned by Google")
     return sorted(ids)
 
 
@@ -176,14 +170,14 @@ async def list_provider_models(
     )
 
     if provider not in LOCAL_PROVIDERS and meta.requires_api_key and not resolved_key:
-        raise HTTPException(
+        raise ModelListError(
+            "API key required to list models for this provider.",
             status_code=400,
-            detail="API key required to list models for this provider.",
         )
 
     if provider in OPENAI_COMPATIBLE_PROVIDERS:
         if not resolved_base:
-            raise HTTPException(status_code=400, detail="Base URL is required for this provider.")
+            raise ModelListError("Base URL is required for this provider.", status_code=400)
         logger.info("Fetching models from %s at %s", provider, resolved_base)
         return await _fetch_openai_compatible_models(resolved_base, resolved_key)
 
@@ -195,4 +189,4 @@ async def list_provider_models(
         assert resolved_key  # validated above
         return await _fetch_google_models(resolved_key)
 
-    raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+    raise ModelListError(f"Unsupported provider: {provider}", status_code=400)

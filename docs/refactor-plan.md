@@ -18,8 +18,8 @@ Incremental refactor to improve structure and test coverage without changing pro
 | **0 — Baseline** | Done | `tests/conftest.py`, API smoke tests, this doc |
 | **1 — Dead code** | Done | Removed batch/cascade matcher, `ResearchPlan`, orphan prompts |
 | **2 — Backend layering** | Done | Split API routers, `match/` package, schema layout |
-| **3 — Backend quality** | Next | Exception handlers, remove `HTTPException` from services, httpx pooling |
-| **4 — Frontend structure** | Planned | Hooks (`usePolling`, `useMatchAnalysis`), `RequireProfile`, split `JobDetailPage` |
+| **3 — Backend quality** | Done | Exception handlers, service-layer errors, httpx pooling |
+| **4 — Frontend structure** | Next | Hooks (`usePolling`, `useMatchAnalysis`), `RequireProfile`, split `JobDetailPage` |
 | **5 — Types & observability** | Planned | OpenAPI typegen, optional request IDs |
 | **6 — Testing pyramid** | Ongoing | Expand API integration tests after route split |
 

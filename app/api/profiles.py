@@ -16,10 +16,8 @@ from app.schemas import (
     ProfileUpdate,
     ResumeParseRead,
 )
-from app.services.llm.base import LLMConfigurationError, LLMError
-from app.services.resume_parser import ResumeParseError, extract_text_from_pdf
+from app.services.resume_parser import extract_text_from_pdf
 from app.services.resume_pdf_export import (
-    ResumePdfExportError,
     build_profile_resume_pdf,
     content_disposition_attachment,
     resume_pdf_filename,
@@ -70,23 +68,10 @@ async def parse_resume(
         raise HTTPException(status_code=400, detail="File must be under 10 MB")
 
     logger.info("Extracting text from %s (%.1f KB)", filename, len(content) / 1024)
-
-    try:
-        resume_text = await asyncio.to_thread(extract_text_from_pdf, content)
-    except ResumeParseError as exc:
-        logger.warning("Resume parse failed for %s: %s", filename, exc)
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    resume_text = await asyncio.to_thread(extract_text_from_pdf, content)
 
     logger.info("Structuring resume from %s (%d chars)", filename, len(resume_text))
-
-    try:
-        extraction = await structure_resume(db, resume_text)
-    except LLMConfigurationError as exc:
-        logger.warning("Resume structuring skipped — provider not configured: %s", exc)
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except LLMError as exc:
-        logger.error("Resume structuring failed for %s: %s", filename, exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    extraction = await structure_resume(db, resume_text)
 
     logger.info(
         "Structured %s — name=%r, skills=%d, experience=%d",
@@ -110,11 +95,7 @@ async def get_profile(profile: Profile = Depends(get_profile_or_404)):
 
 @router.get("/profiles/{profile_id}/resume.pdf")
 async def export_profile_resume_pdf(profile: Profile = Depends(get_profile_or_404)):
-    try:
-        pdf_bytes = build_profile_resume_pdf(profile)
-    except ResumePdfExportError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-
+    pdf_bytes = build_profile_resume_pdf(profile)
     filename = resume_pdf_filename(profile.name)
     return Response(
         content=pdf_bytes,

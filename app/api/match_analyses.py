@@ -1,4 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +15,6 @@ from app.schemas import (
 )
 from app.schemas.enums import MatchDepth
 from app.services.cover_letter_generator import generate_cover_letter
-from app.services.llm.base import LLMConfigurationError, LLMError
 from app.services.match import (
     match_result_for_cover_letter,
     match_result_from_analysis_payload,
@@ -96,16 +96,13 @@ async def create_resume_optimization(
 
     try:
         match_result = match_result_from_analysis_payload(analysis.result)
-    except Exception as exc:
+    except ValidationError as exc:
         raise HTTPException(status_code=400, detail="Invalid match analysis result") from exc
 
     if not match_result.gaps:
         raise HTTPException(status_code=400, detail="No gaps to optimize against")
 
-    try:
-        return await optimize_resume_for_match(db, profile, job, match_result)
-    except (LLMConfigurationError, LLMError) as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return await optimize_resume_for_match(db, profile, job, match_result)
 
 
 @router.post(
@@ -131,10 +128,5 @@ async def create_cover_letter(
         match_result = match_result_for_cover_letter(analysis.result)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail="Invalid match analysis result") from exc
 
-    try:
-        return await generate_cover_letter(db, profile, job, match_result)
-    except (LLMConfigurationError, LLMError) as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return await generate_cover_letter(db, profile, job, match_result)

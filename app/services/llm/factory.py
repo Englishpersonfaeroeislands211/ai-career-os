@@ -1,6 +1,8 @@
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.providers import DEFAULT_BASE_URLS, OPENAI_COMPATIBLE_PROVIDERS, LLMProvider
+from app.services.http_client import get_http_client
 from app.services.llm.base import LLMClient, LLMConfigurationError
 from app.services.llm.openai_compatible import (
     OpenAICompatibleClient,
@@ -14,7 +16,12 @@ _UNSUPPORTED_PROVIDERS: dict[LLMProvider, str] = {
 }
 
 
-def create_llm_client(settings: EffectiveLLMSettings) -> LLMClient:
+def create_llm_client(
+    settings: EffectiveLLMSettings,
+    *,
+    http_client: httpx.AsyncClient | None = None,
+) -> LLMClient:
+    client = http_client or _optional_http_client()
     if settings.provider in OPENAI_COMPATIBLE_PROVIDERS:
         config = build_openai_compatible_config(
             model=settings.model,
@@ -22,7 +29,7 @@ def create_llm_client(settings: EffectiveLLMSettings) -> LLMClient:
             api_key=settings.api_key,
             default_base_url=DEFAULT_BASE_URLS.get(settings.provider),
         )
-        return OpenAICompatibleClient(config)
+        return OpenAICompatibleClient(config, http_client=client)
 
     message = _UNSUPPORTED_PROVIDERS.get(
         settings.provider,
@@ -38,3 +45,10 @@ async def get_llm_client(db: AsyncSession) -> LLMClient:
             "AI provider is not configured. Complete onboarding or update Settings."
         )
     return create_llm_client(settings)
+
+
+def _optional_http_client() -> httpx.AsyncClient | None:
+    try:
+        return get_http_client()
+    except RuntimeError:
+        return None

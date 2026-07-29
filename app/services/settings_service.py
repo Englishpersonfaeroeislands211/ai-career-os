@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.exceptions import SettingsValidationError
 from app.models import AppSettings
 from app.schemas.providers import (
     DEFAULT_BASE_URLS,
@@ -53,18 +53,15 @@ def _validate_provider_config(
     meta = PROVIDER_REGISTRY[provider]
 
     if meta.requires_api_key and not api_key:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"API key required for {meta.label}. "
-                "Enter a key or set the matching environment variable on the server."
-            ),
+        raise SettingsValidationError(
+            f"API key required for {meta.label}. "
+            "Enter a key or set the matching environment variable on the server."
         )
 
     if provider == "azure_openai" and not base_url:
-        raise HTTPException(
-            status_code=400,
-            detail="Azure OpenAI requires your deployment base URL (e.g. https://<resource>.openai.azure.com/openai/v1).",
+        raise SettingsValidationError(
+            "Azure OpenAI requires your deployment base URL "
+            "(e.g. https://<resource>.openai.azure.com/openai/v1)."
         )
 
 
