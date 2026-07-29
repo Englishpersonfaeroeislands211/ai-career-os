@@ -8,7 +8,6 @@ from app.models import Job, MatchAnalysis, Profile
 from app.schemas.match_analysis import MatchGap, MatchResult, MatchStrength
 from app.services.llm.base import LLMConfigurationError
 from app.services.match import analyze_match, run_match_analysis
-from app.services.match.analyzer import analyze_matches_screen
 
 
 @pytest.mark.asyncio
@@ -122,13 +121,3 @@ async def test_run_match_analysis_marks_completed():
     assert analysis.result["depth"] == "full"
     assert analysis.result["score"] == match_result.model_dump()["score"]
     mock_session.commit.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_analyze_matches_screen_requires_jobs():
-    with pytest.raises(ValueError, match="At least one job"):
-        await analyze_matches_screen(
-            db=None,
-            profile=SimpleNamespace(structured_data={}, resume_text="Resume"),
-            jobs=[],
-        )

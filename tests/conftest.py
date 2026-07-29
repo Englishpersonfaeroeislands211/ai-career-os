@@ -9,6 +9,17 @@ from httpx import ASGITransport
 
 from app.db.session import get_db
 from app.main import app
+from app.services.rag.retrieval import DeterministicEmbeddingProvider
+
+
+@pytest.fixture(autouse=True)
+def deterministic_embedding_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Avoid downloading fastembed models during tests."""
+    provider = DeterministicEmbeddingProvider()
+    monkeypatch.setattr(
+        "app.services.match.formatters.get_embedding_provider",
+        lambda: provider,
+    )
 
 
 @pytest.fixture

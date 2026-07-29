@@ -15,12 +15,6 @@ def test_load_match_analysis_prompt():
     assert "Never hallucinate" in prompt
 
 
-def test_load_batch_screen_match_prompt():
-    prompt = load_prompt("batch_screen_match")
-    assert "screening cards" in prompt.casefold()
-    assert "job_id" in prompt
-
-
 def test_load_resume_optimization_prompt():
     prompt = load_prompt("resume_optimization")
     assert "suggestions" in prompt

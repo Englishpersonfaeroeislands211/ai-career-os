@@ -198,14 +198,10 @@ export function JobReviewPage() {
           <ol className="space-y-2 text-sm text-text-muted">
             <li className="flex gap-2">
               <span className="text-accent">1.</span>
-              Quick screen score in a few seconds
+              Explainable match analysis — score, strengths, gaps, evidence
             </li>
             <li className="flex gap-2">
               <span className="text-accent">2.</span>
-              Full explainable analysis — strengths, gaps, evidence
-            </li>
-            <li className="flex gap-2">
-              <span className="text-accent">3.</span>
               Company research, resume tweaks, cover letter
             </li>
           </ol>

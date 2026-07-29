@@ -21,7 +21,7 @@ from app.schemas import (
 from app.services.company_research import company_brief_to_storage, research_company
 from app.services.job_paste_parser import prepare_job_post_text
 from app.services.job_structurer import structure_job
-from app.services.match import run_progressive_match_analysis
+from app.services.match import run_match_analysis
 from app.services.screening_card import attach_screening_card_to_metadata
 
 logger = get_logger(__name__)
@@ -60,7 +60,7 @@ async def create_job(
     await db.refresh(job)
 
     if match_analysis_id:
-        background_tasks.add_task(run_progressive_match_analysis, match_analysis_id)
+        background_tasks.add_task(run_match_analysis, match_analysis_id)
         logger.info(
             "Queued match analysis %s for new job %s profile=%s",
             match_analysis_id,

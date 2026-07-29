@@ -1,7 +1,5 @@
 export type AiLoadingVariant =
-  | "match-screen"
   | "match-full"
-  | "match-progressive"
   | "resume-extract"
   | "job-extract"
   | "company-research"
@@ -21,15 +19,6 @@ export interface LoadingConfig {
 }
 
 export const LOADING_CONFIG: Record<AiLoadingVariant, LoadingConfig> = {
-  "match-screen": {
-    title: "Quick screening",
-    messages: [
-      "Reading your profile against the job…",
-      "Scoring headline fit and core skills…",
-      "Building a fast first impression…",
-    ],
-    steps: [{ label: "Screen" }, { label: "Score" }],
-  },
   "match-full": {
     title: "Deep match analysis",
     messages: [
@@ -39,15 +28,6 @@ export const LOADING_CONFIG: Record<AiLoadingVariant, LoadingConfig> = {
       "Calibrating recommendation and score…",
     ],
     steps: [{ label: "Parse JD" }, { label: "Evidence" }, { label: "Verdict" }],
-  },
-  "match-progressive": {
-    title: "Full analysis running",
-    messages: [
-      "Screen complete — now digging into strengths…",
-      "Mapping gaps with severity scores…",
-      "Writing explainable summary…",
-    ],
-    steps: [{ label: "Screen ✓" }, { label: "Strengths" }, { label: "Gaps" }],
   },
   "resume-extract": {
     title: "Reading your resume",

@@ -1,16 +1,4 @@
-from app.schemas.match_analysis import MatchResult, ScreeningJobMatchResult
-
-
-def screen_result_payload(match: ScreeningJobMatchResult) -> dict:
-    return {
-        "depth": "screen",
-        "score": match.score,
-        "recommendation": match.recommendation,
-        "reason": match.reason,
-        "summary": match.reason,
-        "strengths": [],
-        "gaps": [],
-    }
+from app.schemas.match_analysis import MatchResult
 
 
 def full_result_payload(result: MatchResult) -> dict:

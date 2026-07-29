@@ -5,13 +5,12 @@ interface MatchAnalysisProgressProps {
   showUnlocks?: boolean;
 }
 
-const STEPS = ["Screening", "Full analysis", "Ready"] as const;
+const STEPS = ["Analyzing", "Ready"] as const;
 
 function activeStep(analysis: MatchAnalysis | null): number {
   if (!analysis) return 0;
-  if (analysis.status === "completed") return 2;
-  if (analysis.status === "failed") return 2;
-  if (analysis.result?.depth === "screen") return 1;
+  if (analysis.status === "completed") return 1;
+  if (analysis.status === "failed") return 1;
   return 0;
 }
 
@@ -25,7 +24,7 @@ export function MatchAnalysisProgress({ analysis, showUnlocks = false }: MatchAn
     <div className="rounded-xl border border-border bg-surface-raised px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
-          {failed ? "Analysis failed" : step === 2 ? "Analysis complete" : "Analyzing your fit"}
+          {failed ? "Analysis failed" : step === 1 ? "Analysis complete" : "Analyzing your fit"}
         </p>
         {analysis.status === "pending" && (
           <span className="text-xs text-text-muted">Usually under 30 seconds</span>
@@ -64,9 +63,10 @@ export function MatchAnalysisProgress({ analysis, showUnlocks = false }: MatchAn
         })}
       </div>
 
-      {showUnlocks && step === 2 && analysis.status === "completed" && (
+      {showUnlocks && step === 1 && analysis.status === "completed" && (
         <p className="mt-3 text-sm text-text-muted">
-          Unlocked: company research, resume optimization, and cover letter below.
+          Full analysis ready — review your score and evidence below. Research, resume, and cover
+          letter tabs are unlocked when you&apos;re ready.
         </p>
       )}
     </div>

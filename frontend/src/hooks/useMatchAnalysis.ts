@@ -36,9 +36,11 @@ export function useMatchAnalysis(analysisId: string | null | undefined) {
     };
   }, [analysisId, refresh]);
 
-  usePolling(async () => {
+  const poll = useCallback(async () => {
     await refresh();
-  }, analysis?.status === "pending");
+  }, [refresh]);
+
+  usePolling(poll, analysis?.status === "pending");
 
   return { analysis, setAnalysis, loading, refresh };
 }

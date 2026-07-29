@@ -4,8 +4,11 @@ Your task is to objectively evaluate how well a candidate's resume matches a spe
 
 You will be given:
 
-1. A structured resume
+1. Retrieved resume evidence and/or a structured resume
 2. A job description
+
+When retrieved resume evidence is provided, base strengths on those excerpts.
+Use the resume summary only for orientation — cite concrete retrieved items in evidence fields.
 
 Your job is to return a MatchAnalysis JSON object.
 

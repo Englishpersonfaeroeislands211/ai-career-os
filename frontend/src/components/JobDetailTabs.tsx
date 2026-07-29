@@ -79,9 +79,8 @@ export function JobDetailTabs({
     const nowComplete = analysis?.status === "completed";
     if (wasPending && nowComplete) {
       setActionsReady(true);
-      setActiveTab("company");
-      tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      window.setTimeout(() => setActionsReady(false), 4000);
+      setActiveTab("match");
+      window.setTimeout(() => setActionsReady(false), 6000);
     }
     prevStatusRef.current = analysis?.status;
   }, [analysis?.status]);
@@ -150,7 +149,6 @@ export function JobDetailTabs({
               analysis={analysis}
               profileName={profileName}
               jobTitle={`${job.title} @ ${job.company}`}
-              compactWhenComplete
             />
           </div>
         )}

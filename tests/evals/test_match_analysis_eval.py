@@ -79,6 +79,7 @@ async def test_analyze_match_pipeline_with_mocked_llm(case_name: str, case_dir: 
     assert call_kwargs["response_model"] is MatchResult
     user_message = call_kwargs["messages"][-1].content
     assert job.title in user_message
+    assert "Retrieved resume evidence" in user_message
     assert profile_data["name"] in user_message
 
     failures = evaluate_match_result(result, expected, case_name=case_name)
@@ -100,6 +101,7 @@ def test_build_match_user_message_uses_structured_profile():
     message = build_match_user_message(profile, job)
     assert "Jane Doe" in message
     assert "Backend Engineer" in message
+    assert "Retrieved resume evidence" in message
     assert "Plain resume text" not in message
 
 

@@ -50,11 +50,10 @@ export function JobBoard({ jobs, analyses, profileId }: JobBoardProps) {
       <ul className="divide-y divide-border">
         {sorted.map((job) => {
           const analysis = latestAnalysisForJob(analyses, profileId, job.id);
+          const pending = analysis?.status === "pending";
           const score = hasMatchResult(analysis) ? scoreFromResult(analysis?.result) : null;
           const rec = hasMatchResult(analysis) ? analysis?.result?.recommendation : undefined;
           const recLabel = recommendationLabel(rec);
-          const pendingFull =
-            analysis?.status === "pending" && analysis.result?.depth !== "screen";
 
           return (
             <li key={job.id}>
@@ -70,11 +69,11 @@ export function JobBoard({ jobs, analyses, profileId }: JobBoardProps) {
                   </p>
                 </div>
                 <div className="flex md:justify-center">
-                  {pendingFull ? (
+                  {pending ? (
                     <Badge variant="info">
                       <span className="inline-flex items-center gap-1.5">
                         <span className="size-1.5 animate-pulse rounded-full bg-accent" />
-                        Full analysis…
+                        Analyzing…
                       </span>
                     </Badge>
                   ) : analysis?.status === "failed" ? (

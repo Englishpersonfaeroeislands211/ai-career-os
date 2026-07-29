@@ -1,8 +1,9 @@
 import json
 
+from app.config import settings
 from app.models import Job, Profile
-from app.schemas.screening_card import ScreeningCard
-from app.services.screening_card import build_screening_card
+from app.services.rag.match_context import format_rag_resume_section, retrieve_for_match
+from app.services.rag.retrieval import EmbeddingProvider, get_embedding_provider
 
 
 def format_profile(profile: Profile) -> str:
@@ -24,30 +25,26 @@ def format_job(job: Job) -> str:
     return "\n".join(parts)
 
 
-def _format_screening_card(card: ScreeningCard) -> str:
-    lines = [
-        f"job_id: {card.job_id}",
-        f"Title: {card.title}",
-        f"Company: {card.company}",
-    ]
-    if card.location:
-        lines.append(f"Location: {card.location}")
-    if card.top_requirements:
-        lines.append(f"Requirements: {', '.join(card.top_requirements)}")
-    lines.append(f"Summary: {card.summary}")
-    return "\n".join(lines)
+def build_match_user_message(
+    profile: Profile,
+    job: Job,
+    *,
+    use_rag: bool | None = None,
+    embedder: EmbeddingProvider | None = None,
+    top_k: int | None = None,
+) -> str:
+    job_block = format_job(job)
+    rag_enabled = settings.match_rag_enabled if use_rag is None else use_rag
+    limit = settings.match_rag_top_k if top_k is None else top_k
 
+    if rag_enabled:
+        provider = embedder or get_embedding_provider()
+        scored = retrieve_for_match(profile, job_block, provider, top_k=limit)
+        if scored:
+            resume_block = format_rag_resume_section(profile, scored)
+        else:
+            resume_block = f"Structured resume:\n\n{format_profile(profile)}"
+    else:
+        resume_block = f"Structured resume:\n\n{format_profile(profile)}"
 
-def build_match_user_message(profile: Profile, job: Job) -> str:
-    return (
-        f"Structured resume:\n\n{format_profile(profile)}\n\nJob description:\n\n{format_job(job)}"
-    )
-
-
-def build_batch_screen_user_message(profile: Profile, jobs: list[Job]) -> str:
-    cards = [_format_screening_card(build_screening_card(job)) for job in jobs]
-    return (
-        "Structured resume:\n\n"
-        f"{format_profile(profile)}\n\n"
-        "Job screening cards (return one match entry per job_id):\n\n" + "\n\n---\n\n".join(cards)
-    )
+    return f"{resume_block}\n\nJob description:\n\n{job_block}"

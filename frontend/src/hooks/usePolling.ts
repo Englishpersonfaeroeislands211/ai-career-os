@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 /** Poll `callback` on an interval while `enabled` is true. */
 export function usePolling(
@@ -6,14 +6,18 @@ export function usePolling(
   enabled: boolean,
   intervalMs = 2000,
 ) {
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+
   useEffect(() => {
     if (!enabled) return;
 
     let cancelled = false;
 
     async function tick() {
+      if (cancelled) return;
       try {
-        await callback();
+        await callbackRef.current();
       } catch (err) {
         if (!cancelled) console.error(err);
       }
@@ -26,5 +30,5 @@ export function usePolling(
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [callback, enabled, intervalMs]);
+  }, [enabled, intervalMs]);
 }

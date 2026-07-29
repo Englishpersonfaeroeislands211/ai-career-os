@@ -1,4 +1,4 @@
-import type { MatchAnalysis, MatchResult } from "../types";
+import type { MatchAnalysis } from "../types";
 
 export function latestAnalysisForJob(
   analyses: MatchAnalysis[],
@@ -10,26 +10,24 @@ export function latestAnalysisForJob(
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 }
 
-export function scoreFromResult(result: MatchResult | null | undefined): number | null {
+export function scoreFromResult(
+  result: { score?: number } | null | undefined,
+): number | null {
   if (!result || typeof result.score !== "number") return null;
   return result.score;
 }
 
-export function hasScreenPreview(analysis: MatchAnalysis | null | undefined): boolean {
-  return analysis?.status === "pending" && analysis.result?.depth === "screen";
-}
-
 export function hasMatchResult(analysis: MatchAnalysis | null | undefined): boolean {
-  if (!analysis?.result) return false;
-  return analysis.status === "completed" || hasScreenPreview(analysis);
+  return analysis?.status === "completed" && !!analysis.result;
 }
 
 export function isFullMatch(analysis: MatchAnalysis | null | undefined): boolean {
-  return analysis?.status === "completed" && analysis.result?.depth !== "screen";
+  if (!hasMatchResult(analysis)) return false;
+  return analysis!.result?.depth !== "screen";
 }
 
 export function recommendationVariant(
-  recommendation: MatchResult["recommendation"] | undefined,
+  recommendation: string | undefined,
 ): "success" | "warning" | "danger" | "default" {
   if (recommendation === "apply") return "success";
   if (recommendation === "maybe apply") return "warning";
@@ -52,7 +50,7 @@ export function jobsNeedingAnalysis(
   }).length;
 }
 
-export function recommendationLabel(recommendation: MatchResult["recommendation"] | undefined) {
+export function recommendationLabel(recommendation: string | undefined) {
   if (recommendation === "apply") return "Apply";
   if (recommendation === "maybe apply") return "Maybe";
   if (recommendation === "do not apply") return "Skip";
