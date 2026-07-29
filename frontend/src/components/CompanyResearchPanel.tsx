@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import type { CompanyBrief, Job } from "../types";
+import { AiLoadingState } from "./AiLoadingState";
 import { Button, Card, ErrorBanner } from "./ui";
 
 interface CompanyResearchPanelProps {
@@ -43,7 +44,7 @@ export function CompanyResearchPanel({ job, onUpdated }: CompanyResearchPanelPro
   return (
     <Card
       title="Company research"
-      description="Plan → web search → synthesize brief with sources"
+      description="Agent-guided web search → synthesize brief with sources"
     >
       {error && (
         <div className="mb-4">
@@ -51,19 +52,19 @@ export function CompanyResearchPanel({ job, onUpdated }: CompanyResearchPanelPro
         </div>
       )}
 
-      {!brief && (
+      {!brief && !loading && (
         <div className="space-y-4">
           <p className="text-sm text-text-muted">
             Search the web for culture, recent news, and interview signals about {job.company}.
             Results are grounded in search snippets with source links.
           </p>
-          <Button onClick={handleResearch} loading={loading}>
-            Research company
-          </Button>
+          <Button onClick={handleResearch}>Research company</Button>
         </div>
       )}
 
-      {brief && (
+      {loading && <AiLoadingState variant="company-research" size="md" />}
+
+      {brief && !loading && (
         <div className="space-y-6">
           <p className="text-sm leading-relaxed text-text">{brief.summary}</p>
 

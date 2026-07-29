@@ -105,8 +105,12 @@ export function ReviewPage() {
   }
 
   return (
-    <Layout subtitle={isUpdate ? "Review updated resume" : "Review your profile"} showNav={isUpdate}>
-      <main className="mx-auto max-w-2xl space-y-6 px-6 py-12">
+    <Layout
+      title={isUpdate ? "Review update" : "Review profile"}
+      subtitle={isUpdate ? "Confirm changes before saving" : "Edit extracted fields before matching"}
+      showSidebar={isUpdate}
+    >
+      <div className="space-y-6">
         {!isUpdate && <OnboardingSteps current={3} />}
 
         <div>
@@ -203,7 +207,7 @@ export function ReviewPage() {
             {isUpdate ? "Update profile" : "Save & continue"}
           </Button>
         </div>
-      </main>
+      </div>
     </Layout>
   );
 }

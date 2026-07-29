@@ -1,11 +1,25 @@
-import { useNavigate } from "react-router-dom";
-import { JobPanel } from "../components/JobPanel";
+import { useLocation, useNavigate } from "react-router-dom";
+import { PageLoader } from "../components/AiLoadingState";
+import { JobIntakeSteps } from "../components/JobIntakeSteps";
+import { JobPasteZone } from "../components/JobPasteZone";
 import { Layout } from "../components/Layout";
 import { useActiveProfile } from "../hooks/useActiveProfile";
-import { Button } from "../components/ui";
+import type { JobParseResult } from "../types";
+
+interface JobNewLocationState {
+  pasteText?: string;
+}
+
+const NEXT_STEPS = [
+  "AI extracts title, company, and requirements from your description",
+  "You review and fix anything",
+  "Match analysis runs automatically",
+] as const;
 
 export function JobNewPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pasteText = (location.state as JobNewLocationState | null)?.pasteText;
   const { profile, loading, requireProfile } = useActiveProfile();
 
   if (!loading && !profile) {
@@ -14,35 +28,43 @@ export function JobNewPage() {
 
   if (loading || !profile) {
     return (
-      <Layout subtitle="Add opportunity">
-        <main className="flex min-h-[50vh] items-center justify-center">
-          <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </main>
+      <Layout title="Add job" subtitle="Paste a job description to analyze">
+        <PageLoader variant="page" />
       </Layout>
     );
   }
 
+  function handleParsed(result: JobParseResult) {
+    navigate("/jobs/new/review", { state: { parsed: result } });
+  }
+
   return (
-    <Layout subtitle="Add opportunity">
-      <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold">Add a job</h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Paste a listing — we extract fields and analyze the match against your profile.
-            </p>
-          </div>
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            ← Back
-          </Button>
+    <Layout title="Add job" subtitle="Paste a job description — we extract fields and analyze your fit">
+      <div className="mx-auto max-w-2xl space-y-8">
+        <JobIntakeSteps current={1} />
+
+        <div>
+          <h2 className="text-2xl font-semibold">Paste any job description</h2>
+          <p className="mt-2 text-text-muted">
+            Include all details — we&apos;ll structure the role and compare it to{" "}
+            <span className="font-medium text-text">{profile.name}</span>&apos;s profile.
+          </p>
         </div>
-        <JobPanel
-          selectedId={null}
-          profileId={profile.id}
-          onSelect={() => {}}
-          onSaved={(job) => navigate(`/jobs/${job.id}`, { replace: true })}
-        />
-      </main>
+
+        <JobPasteZone onParsed={handleParsed} initialText={pasteText} />
+
+        <section className="rounded-xl border border-border bg-surface-raised px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">What happens next</p>
+          <ol className="mt-3 space-y-2">
+            {NEXT_STEPS.map((step, i) => (
+              <li key={step} className="flex gap-3 text-sm text-text-muted">
+                <span className="font-medium text-accent">{i + 1}</span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
     </Layout>
   );
 }

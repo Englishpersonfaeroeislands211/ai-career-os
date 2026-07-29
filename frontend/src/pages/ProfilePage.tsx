@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ResumeParseResult } from "../types";
 import { Layout } from "../components/Layout";
+import { PageLoader } from "../components/AiLoadingState";
 import { parseStructuredData, StructuredProfileView } from "../components/StructuredProfileView";
 import { ResumeUploadZone } from "../components/ResumeUploadZone";
 import { useActiveProfile } from "../hooks/useActiveProfile";
@@ -46,10 +47,8 @@ export function ProfilePage() {
 
   if (loading || !profile) {
     return (
-      <Layout subtitle="Profile">
-        <main className="flex min-h-[50vh] items-center justify-center">
-          <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </main>
+      <Layout title="Profile" subtitle="Your career data">
+        <PageLoader variant="page" />
       </Layout>
     );
   }
@@ -57,8 +56,8 @@ export function ProfilePage() {
   const structured = parseStructuredData(profile.structured_data);
 
   return (
-    <Layout subtitle="Your career profile">
-      <main className="mx-auto max-w-3xl space-y-8 px-6 py-8">
+    <Layout title="Profile" subtitle={profile.name}>
+      <div className="space-y-8">
         {downloadError && <ErrorBanner message={downloadError} />}
 
         <section className="rounded-2xl border border-border bg-surface-raised p-6 sm:p-8">
@@ -119,7 +118,7 @@ export function ProfilePage() {
             {profile.resume_text}
           </pre>
         </details>
-      </main>
+      </div>
     </Layout>
   );
 }

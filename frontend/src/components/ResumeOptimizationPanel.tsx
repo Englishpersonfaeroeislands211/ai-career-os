@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../api/client";
 import type { MatchAnalysis, ResumeOptimizationResult, ResumeSuggestion } from "../types";
 import { isFullMatch } from "../lib/matches";
+import { AiLoadingState } from "./AiLoadingState";
 import { Badge, Button, Card, ErrorBanner } from "./ui";
 
 interface ResumeOptimizationPanelProps {
@@ -85,19 +86,19 @@ export function ResumeOptimizationPanel({
         </div>
       )}
 
-      {!result && (
+      {!result && !loading && (
         <div className="space-y-4">
           <p className="text-sm text-text-muted">
             The matcher found {gaps.length} gap{gaps.length === 1 ? "" : "s"}. Generate
             honest rewrite suggestions grounded in your existing experience.
           </p>
-          <Button onClick={handleGenerate} loading={loading}>
-            Generate resume suggestions
-          </Button>
+          <Button onClick={handleGenerate}>Generate resume suggestions</Button>
         </div>
       )}
 
-      {result && (
+      {loading && <AiLoadingState variant="resume-optimize" size="md" />}
+
+      {result && !loading && (
         <div className="space-y-6">
           <p className="text-sm leading-relaxed text-text">{result.summary}</p>
 

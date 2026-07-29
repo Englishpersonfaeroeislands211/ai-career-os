@@ -23,8 +23,8 @@ export function JobBoard({ jobs, analyses, profileId }: JobBoardProps) {
         <p className="text-4xl">💼</p>
         <h3 className="mt-4 text-lg font-semibold">No jobs yet</h3>
         <p className="mt-2 max-w-sm text-sm text-text-muted">
-          Paste a job posting to extract fields, then run explainable match analysis against your
-          profile.
+          Paste any job description with all details — we&apos;ll extract fields and run explainable
+          match analysis against your profile.
         </p>
         <Link to="/jobs/new" className="mt-6">
           <Button>Add your first job</Button>
@@ -71,7 +71,12 @@ export function JobBoard({ jobs, analyses, profileId }: JobBoardProps) {
                 </div>
                 <div className="flex md:justify-center">
                   {pendingFull ? (
-                    <Badge variant="info">Analyzing…</Badge>
+                    <Badge variant="info">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="size-1.5 animate-pulse rounded-full bg-accent" />
+                        Full analysis…
+                      </span>
+                    </Badge>
                   ) : analysis?.status === "failed" ? (
                     <Badge variant="danger">Failed</Badge>
                   ) : (

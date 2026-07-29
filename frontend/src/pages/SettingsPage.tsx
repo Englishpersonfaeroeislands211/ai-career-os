@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { AiLoadingState } from "../components/AiLoadingState";
 import { Layout } from "../components/Layout";
 import { ProviderForm } from "../components/ProviderForm";
 import { Badge, Button } from "../components/ui";
@@ -33,24 +34,19 @@ export function SettingsPage() {
   }, []);
 
   return (
-    <Layout subtitle="Settings">
-      <main className="mx-auto max-w-2xl space-y-8 px-6 py-12">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold">AI provider</h2>
-            <p className="mt-2 text-text-muted">
-              Update your LLM provider and credentials. Keys are stored on the server only.
-            </p>
-          </div>
+    <Layout title="Settings" subtitle="AI provider and credentials">
+      <div className="space-y-8">
+        <div className="flex items-start justify-between gap-4 lg:hidden">
+          <p className="text-sm text-text-muted">
+            Update your LLM provider and credentials. Keys stay on the server only.
+          </p>
           <Badge variant={configured ? "success" : "warning"}>
             {configured ? "Connected" : "Not configured"}
           </Badge>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-          </div>
+          <AiLoadingState variant="page" size="md" />
         ) : (
           <>
             {saved && (
@@ -86,10 +82,10 @@ export function SettingsPage() {
           {initialModel ? ` · ${initialModel}` : ""}
         </p>
 
-        <Link to="/dashboard">
-          <Button variant="ghost">← Back to dashboard</Button>
+        <Link to="/">
+          <Button variant="ghost">← Back to pipeline</Button>
         </Link>
-      </main>
+      </div>
     </Layout>
   );
 }

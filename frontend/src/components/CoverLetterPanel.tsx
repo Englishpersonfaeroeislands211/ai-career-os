@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../api/client";
 import type { CoverLetterResult, MatchAnalysis } from "../types";
 import { isFullMatch } from "../lib/matches";
+import { AiLoadingState } from "./AiLoadingState";
 import { Button, Card, ErrorBanner } from "./ui";
 
 interface CoverLetterPanelProps {
@@ -44,19 +45,19 @@ export function CoverLetterPanel({ analysis }: CoverLetterPanelProps) {
         </div>
       )}
 
-      {!letter && (
+      {!letter && !loading && (
         <div className="space-y-4">
           <p className="text-sm text-text-muted">
             Generates a short tailored note (max 400 characters) from your match analysis, then
             self-critiques and revises before showing the final version.
           </p>
-          <Button onClick={handleGenerate} loading={loading}>
-            Generate cover letter
-          </Button>
+          <Button onClick={handleGenerate}>Generate cover letter</Button>
         </div>
       )}
 
-      {letter && (
+      {loading && <AiLoadingState variant="cover-letter" size="md" />}
+
+      {letter && !loading && (
         <div className="space-y-4">
           <p className="text-xs text-text-muted">{letter.critique_summary}</p>
           <div className="rounded-lg border border-border bg-surface px-4 py-4">

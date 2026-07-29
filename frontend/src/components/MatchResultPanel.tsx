@@ -1,4 +1,5 @@
 import type { MatchAnalysis, MatchResult } from "../types";
+import { AiLoadingState } from "./AiLoadingState";
 import { ScoreRing } from "./ScoreRing";
 import { Badge, Card } from "./ui";
 
@@ -6,6 +7,8 @@ interface MatchResultPanelProps {
   analysis: MatchAnalysis | null;
   profileName?: string;
   jobTitle?: string;
+  /** When true, strengths/gaps collapse behind "Show details" after full analysis */
+  compactWhenComplete?: boolean;
 }
 
 const recommendationLabels: Record<
@@ -17,31 +20,20 @@ const recommendationLabels: Record<
   "do not apply": { label: "Skip", variant: "danger" },
 };
 
-function ResultContent({ result }: { result: MatchResult }) {
+function ResultContent({
+  result,
+  compactDetails = false,
+}: {
+  result: MatchResult;
+  compactDetails?: boolean;
+}) {
   const rec = recommendationLabels[result.recommendation];
   const isScreen = result.depth === "screen";
+  const hasDetails =
+    !isScreen && ((result.strengths?.length ?? 0) > 0 || (result.gaps?.length ?? 0) > 0);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-6">
-        <ScoreRing score={result.score} size="lg" />
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={rec.variant}>{rec.label}</Badge>
-          <Badge variant={isScreen ? "info" : "default"}>
-            {isScreen ? "Screening" : "Full analysis"}
-          </Badge>
-        </div>
-      </div>
-
-      {isScreen && result.reason && (
-        <p className="text-sm text-text-muted">{result.reason}</p>
-      )}
-
-      <div>
-        <h3 className="mb-2 text-sm font-medium text-text-muted">Summary</h3>
-        <p className="text-sm leading-relaxed text-text">{result.summary}</p>
-      </div>
-
+  const detailsBlock = (
+    <>
       {!isScreen && (result.strengths?.length ?? 0) > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-medium text-success">Strengths</h3>
@@ -82,6 +74,41 @@ function ResultContent({ result }: { result: MatchResult }) {
           </ul>
         </div>
       )}
+    </>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-6">
+        <ScoreRing score={result.score} size="lg" />
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={rec.variant}>{rec.label}</Badge>
+          <Badge variant={isScreen ? "info" : "default"}>
+            {isScreen ? "Screening" : "Full analysis"}
+          </Badge>
+        </div>
+      </div>
+
+      {isScreen && result.reason && (
+        <p className="text-sm text-text-muted">{result.reason}</p>
+      )}
+
+      <div>
+        <h3 className="mb-2 text-sm font-medium text-text-muted">Summary</h3>
+        <p className="text-sm leading-relaxed text-text">{result.summary}</p>
+      </div>
+
+      {compactDetails && hasDetails ? (
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-medium text-accent hover:underline">
+            Show strengths & gaps ({result.strengths?.length ?? 0} strengths,{" "}
+            {result.gaps?.length ?? 0} gaps)
+          </summary>
+          <div className="mt-4 space-y-6">{detailsBlock}</div>
+        </details>
+      ) : (
+        detailsBlock
+      )}
     </div>
   );
 }
@@ -93,28 +120,19 @@ function severityVariant(severity: MatchResult["gaps"][number]["severity"]) {
 }
 
 function PendingState() {
-  return (
-    <div className="flex flex-col items-center gap-3 py-8 text-center">
-      <div className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-      <p className="text-sm text-text-muted">Analyzing match…</p>
-      <p className="max-w-sm text-xs text-text-muted">
-        The AI matcher is comparing your profile against the job description. Results usually
-        appear within a few seconds.
-      </p>
-    </div>
-  );
+  return <AiLoadingState variant="match-screen" size="md" />;
 }
 
 function DeepAnalysisPending() {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 text-sm">
-      <div className="size-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-      <span className="text-text-muted">Running full analysis — strengths and gaps loading…</span>
-    </div>
-  );
+  return <AiLoadingState variant="match-progressive" size="sm" />;
 }
 
-export function MatchResultPanel({ analysis, profileName, jobTitle }: MatchResultPanelProps) {
+export function MatchResultPanel({
+  analysis,
+  profileName,
+  jobTitle,
+  compactWhenComplete = false,
+}: MatchResultPanelProps) {
   if (!analysis) {
     return (
       <Card title="Match result" description="Run an analysis to see explainable output here">
@@ -136,6 +154,11 @@ export function MatchResultPanel({ analysis, profileName, jobTitle }: MatchResul
     analysis.status === "pending" && analysis.result?.depth === "screen"
       ? analysis.result
       : null;
+
+  const useCompactDetails =
+    compactWhenComplete &&
+    analysis.status === "completed" &&
+    analysis.result?.depth !== "screen";
 
   return (
     <Card
@@ -164,7 +187,7 @@ export function MatchResultPanel({ analysis, profileName, jobTitle }: MatchResul
 
       {analysis.status === "completed" && analysis.result && (
         <div className="space-y-4">
-          <ResultContent result={analysis.result} />
+          <ResultContent result={analysis.result} compactDetails={useCompactDetails} />
           {analysis.error && (
             <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
               {analysis.error}

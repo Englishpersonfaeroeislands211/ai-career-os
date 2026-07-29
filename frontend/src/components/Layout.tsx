@@ -1,27 +1,38 @@
-import { Link } from "react-router-dom";
-import { AppNav } from "./AppNav";
+import { Sidebar } from "./Sidebar";
 
 interface LayoutProps {
   children: React.ReactNode;
+  title?: string;
   subtitle?: string;
-  showNav?: boolean;
+  showSidebar?: boolean;
 }
 
-export function Layout({ children, subtitle = "Career command center", showNav = true }: LayoutProps) {
+export function Layout({
+  children,
+  title,
+  subtitle,
+  showSidebar = true,
+}: LayoutProps) {
+  if (!showSidebar) {
+    return (
+      <div className="min-h-screen bg-surface">
+        <main>{children}</main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="sticky top-0 z-10 border-b border-border bg-surface-raised/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <Link to="/" className="group min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight group-hover:text-accent">
-              AI Career OS
-            </h1>
-            <p className="truncate text-sm text-text-muted">{subtitle}</p>
-          </Link>
-          {showNav && <AppNav />}
-        </div>
-      </header>
-      {children}
+    <div className="flex min-h-screen flex-col bg-surface lg:flex-row">
+      <Sidebar />
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        {(title || subtitle) && (
+          <header className="hidden border-b border-border bg-surface/80 px-8 py-5 backdrop-blur-sm lg:block">
+            {title && <h1 className="text-xl font-semibold tracking-tight text-text">{title}</h1>}
+            {subtitle && <p className="mt-0.5 text-sm text-text-muted">{subtitle}</p>}
+          </header>
+        )}
+        <main className="flex-1 w-full px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+      </div>
     </div>
   );
 }

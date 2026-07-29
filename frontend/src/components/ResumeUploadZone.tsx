@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { ResumeParseResult } from "../types";
+import { AiLoadingState } from "./AiLoadingState";
 import { Button, ErrorBanner } from "./ui";
 
 interface ResumeUploadZoneProps {
@@ -73,10 +74,9 @@ export function ResumeUploadZone({ onParsed, compact = false }: ResumeUploadZone
           }}
         />
         {uploading ? (
-          <>
-            <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-            <p className="mt-3 text-sm text-text-muted">Extracting resume with AI…</p>
-          </>
+          <div className="w-full max-w-sm">
+            <AiLoadingState variant="resume-extract" size="sm" />
+          </div>
         ) : (
           <>
             <p className={compact ? "text-2xl" : "text-4xl"}>📄</p>

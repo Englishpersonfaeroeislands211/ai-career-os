@@ -8,8 +8,8 @@ export function OnboardingPage() {
   const navigate = useNavigate();
 
   return (
-    <Layout subtitle="Upload your resume" showNav={false}>
-      <main className="mx-auto max-w-xl space-y-6 px-6 py-12">
+    <Layout showSidebar={false}>
+      <div className="mx-auto max-w-xl space-y-6 px-6 py-12">
         <OnboardingSteps current={2} />
 
         <div>
@@ -28,7 +28,7 @@ export function OnboardingPage() {
             Back
           </Button>
         </div>
-      </main>
+      </div>
     </Layout>
   );
 }

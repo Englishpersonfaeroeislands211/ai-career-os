@@ -28,7 +28,7 @@ export function ScoreRing({ score, size = "md", label = "match" }: ScoreRingProp
   return (
     <div className="flex flex-col items-center gap-0.5">
       <span
-        className={`flex items-center justify-center rounded-full border-2 bg-surface font-bold tabular-nums ${color} ${ring} ${
+        className={`flex items-center justify-center rounded-full border-2 bg-surface-raised font-bold tabular-nums ${color} ${ring} ${
           size === "lg" ? "size-16 text-xl" : size === "sm" ? "size-10 text-sm" : "size-14 text-lg"
         }`}
       >

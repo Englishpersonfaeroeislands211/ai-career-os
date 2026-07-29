@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { api } from "../api/client";
+import { AiLoadingState } from "../components/AiLoadingState";
 import { Layout } from "../components/Layout";
+import { LogoMark } from "../components/Logo";
 import { Button } from "../components/ui";
 
 export function WelcomePage() {
@@ -20,20 +22,20 @@ export function WelcomePage() {
 
   if (hasProfiles === null) {
     return (
-      <Layout showNav={false} subtitle="Your intelligent career assistant">
-        <main className="flex min-h-[50vh] items-center justify-center">
-          <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </main>
+      <Layout showSidebar={false}>
+        <div className="flex min-h-screen items-center justify-center p-6">
+          <div className="w-full max-w-md">
+            <AiLoadingState variant="page" size="lg" />
+          </div>
+        </div>
       </Layout>
     );
   }
 
   return (
-    <Layout showNav={false} subtitle="Your intelligent career assistant">
-      <main className="mx-auto flex max-w-2xl flex-col items-center px-6 py-24 text-center">
-        <div className="mb-8 inline-flex size-16 items-center justify-center rounded-2xl bg-accent/15 text-2xl">
-          ◈
-        </div>
+    <Layout showSidebar={false}>
+      <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-24 text-center">
+        <LogoMark className="mb-8 size-16" />
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Understand why a job fits
         </h2>

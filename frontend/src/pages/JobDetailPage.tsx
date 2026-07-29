@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { CompanyBrief, Job, JobExtraction, MatchAnalysis } from "../types";
+import type { Job, JobExtraction, MatchAnalysis } from "../types";
+import { AiLoadingState, PageLoader } from "../components/AiLoadingState";
 import { Layout } from "../components/Layout";
-import { CompanyResearchPanel } from "../components/CompanyResearchPanel";
-import { CoverLetterPanel } from "../components/CoverLetterPanel";
-import { MatchResultPanel } from "../components/MatchResultPanel";
-import { ResumeOptimizationPanel } from "../components/ResumeOptimizationPanel";
+import { JobDetailTabs } from "../components/JobDetailTabs";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { latestAnalysisForJob } from "../lib/matches";
 import {
@@ -16,9 +14,23 @@ import {
 } from "../lib/jobExtraction";
 import { Badge, Button, ErrorBanner } from "../components/ui";
 
+interface JobDetailLocationState {
+  focusMatch?: boolean;
+  fromIntake?: boolean;
+  matchAnalysisId?: string;
+}
+
 export function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const detailState = location.state as JobDetailLocationState | null;
+  const intakeRef = useRef({
+    focusMatch: detailState?.focusMatch ?? false,
+    fromIntake: detailState?.fromIntake ?? false,
+    matchAnalysisId: detailState?.matchAnalysisId,
+  });
+  const matchSectionRef = useRef<HTMLElement>(null);
   const { profile, loading: profileLoading, requireProfile } = useActiveProfile();
   const [job, setJob] = useState<Job | null>(null);
   const [analysis, setAnalysis] = useState<MatchAnalysis | null>(null);
@@ -40,15 +52,26 @@ export function JobDetailPage() {
     if (!id || !profile) return;
     async function load() {
       try {
-        const [jobData, analyses] = await Promise.all([
-          api.jobs.list().then((jobs) => jobs.find((j) => j.id === id) ?? null),
-          api.matchAnalyses.list(),
-        ]);
+        const jobData = await api.jobs
+          .list()
+          .then((jobs) => jobs.find((j) => j.id === id) ?? null);
         if (!jobData) {
           navigate("/", { replace: true });
           return;
         }
         setJob(jobData);
+
+        const matchAnalysisId = intakeRef.current.matchAnalysisId;
+        if (matchAnalysisId) {
+          try {
+            setAnalysis(await api.matchAnalyses.get(matchAnalysisId));
+            return;
+          } catch {
+            /* fall through to list lookup */
+          }
+        }
+
+        const analyses = await api.matchAnalyses.list();
         setAnalysis(latestAnalysisForJob(analyses, profile!.id, jobData.id) ?? null);
       } catch (err) {
         console.error(err);
@@ -58,6 +81,13 @@ export function JobDetailPage() {
     }
     load();
   }, [id, profile, navigate]);
+
+  useEffect(() => {
+    if (!intakeRef.current.focusMatch || loading) return;
+    intakeRef.current.focusMatch = false;
+    matchSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    navigate(location.pathname, { replace: true, state: null });
+  }, [loading, location.pathname, navigate]);
 
   useEffect(() => {
     if (!analysis || analysis.status !== "pending") return;
@@ -143,10 +173,8 @@ export function JobDetailPage() {
 
   if (profileLoading || loading || !profile || !job) {
     return (
-      <Layout subtitle="Job">
-        <main className="flex min-h-[50vh] items-center justify-center">
-          <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </main>
+      <Layout title="Job" subtitle="Opportunity details">
+        <PageLoader variant="page" />
       </Layout>
     );
   }
@@ -164,137 +192,197 @@ export function JobDetailPage() {
         ? "Re-analyze match"
         : "Analyze match";
 
-  return (
-    <Layout subtitle={`${job.title} @ ${job.company}`}>
-      <main className="mx-auto max-w-3xl space-y-6 px-6 py-8">
-        <Link to="/" className="text-sm text-text-muted hover:text-accent">
-          ← All opportunities
-        </Link>
+  const fromIntake = intakeRef.current.fromIntake;
 
-        {error && <ErrorBanner message={error} />}
-
-        <section className="rounded-xl border border-border bg-surface-raised p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold">{job.title}</h2>
-              <p className="mt-1 text-text-muted">
-                {job.company}
-                {job.location ? ` · ${job.location}` : ""}
-              </p>
-              {job.url && (
-                <a
-                  href={job.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block text-sm text-accent hover:underline"
-                >
-                  View posting
-                </a>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {showAnalyzeButton && (
-                <Button onClick={handleAnalyze} loading={analyzing}>
-                  {analyzeLabel}
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                onClick={handleReExtract}
-                loading={reExtracting}
-                disabled={!canReExtract}
-              >
-                Re-extract fields
-              </Button>
-            </div>
+  const jobDetailsSection = fromIntake ? (
+    <details className="rounded-xl border border-border bg-surface-raised">
+      <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-text hover:bg-surface-overlay/50">
+        Job description · {job.company}
+        {requirements.length > 0 && (
+          <span className="ml-2 font-normal text-text-muted">({requirements.length} requirements)</span>
+        )}
+      </summary>
+      <div className="space-y-4 border-t border-border px-5 py-4">
+        {job.url && (
+          <a
+            href={job.url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block text-sm text-accent hover:underline"
+          >
+            View job link
+          </a>
+        )}
+        {requirements.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {requirements.map((req) => (
+              <Badge key={req} variant="info">
+                {req}
+              </Badge>
+            ))}
           </div>
-
-          {pendingExtraction && (
-            <section className="mt-4 rounded-lg border border-accent/30 bg-accent/5 p-4">
-              <h3 className="text-sm font-medium">Review extracted fields</h3>
-              <p className="mt-1 text-sm text-text-muted">
-                Apply these changes to update the saved job, or cancel to keep the current version.
-              </p>
-              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="text-text-muted">Title</dt>
-                  <dd className="font-medium">{pendingExtraction.extraction.title}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">Company</dt>
-                  <dd className="font-medium">{pendingExtraction.extraction.company}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">Location</dt>
-                  <dd className="font-medium">{pendingExtraction.extraction.location ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">Employment</dt>
-                  <dd className="font-medium">{pendingExtraction.extraction.employment_type ?? "—"}</dd>
-                </div>
-              </dl>
-              {pendingExtraction.extraction.requirements.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {pendingExtraction.extraction.requirements.slice(0, 8).map((req) => (
-                    <Badge key={req} variant="info">
-                      {req}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              <div className="mt-4 flex gap-2">
-                <Button onClick={handleApplyExtraction} loading={applyingExtraction}>
-                  Apply changes
-                </Button>
-                <Button variant="ghost" onClick={() => setPendingExtraction(null)}>
-                  Cancel
-                </Button>
-              </div>
-            </section>
+        )}
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{job.description}</p>
+        <div className="flex flex-wrap gap-2 pt-2">
+          {showAnalyzeButton && (
+            <Button onClick={handleAnalyze} loading={analyzing} variant="secondary">
+              {analyzeLabel}
+            </Button>
           )}
+          <Button
+            variant="ghost"
+            onClick={handleReExtract}
+            loading={reExtracting}
+            disabled={!canReExtract}
+          >
+            Re-extract fields
+          </Button>
+        </div>
+      </div>
+    </details>
+  ) : (
+    <section className="rounded-xl border border-border bg-surface-raised p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">{job.title}</h2>
+          <p className="mt-1 text-text-muted">
+            {job.company}
+            {job.location ? ` · ${job.location}` : ""}
+          </p>
+          {job.url && (
+            <a
+              href={job.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-block text-sm text-accent hover:underline"
+            >
+              View job link
+            </a>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {showAnalyzeButton && (
+            <Button onClick={handleAnalyze} loading={analyzing}>
+              {analyzeLabel}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            onClick={handleReExtract}
+            loading={reExtracting}
+            disabled={!canReExtract}
+          >
+            Re-extract fields
+          </Button>
+        </div>
+      </div>
 
-          {requirements.length > 0 && (
+      {pendingExtraction && (
+        <section className="mt-4 rounded-lg border border-accent/30 bg-accent/5 p-4">
+          <h3 className="text-sm font-medium">Review extracted fields</h3>
+          <p className="mt-1 text-sm text-text-muted">
+            Apply these changes to update the saved job, or cancel to keep the current version.
+          </p>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-text-muted">Title</dt>
+              <dd className="font-medium">{pendingExtraction.extraction.title}</dd>
+            </div>
+            <div>
+              <dt className="text-text-muted">Company</dt>
+              <dd className="font-medium">{pendingExtraction.extraction.company}</dd>
+            </div>
+            <div>
+              <dt className="text-text-muted">Location</dt>
+              <dd className="font-medium">{pendingExtraction.extraction.location ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-text-muted">Employment</dt>
+              <dd className="font-medium">{pendingExtraction.extraction.employment_type ?? "—"}</dd>
+            </div>
+          </dl>
+          {pendingExtraction.extraction.requirements.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {requirements.slice(0, 8).map((req) => (
+              {pendingExtraction.extraction.requirements.slice(0, 8).map((req) => (
                 <Badge key={req} variant="info">
                   {req}
                 </Badge>
               ))}
             </div>
           )}
-
-          <div className="mt-6">
-            <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-text-muted">
-              Description
-            </h3>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{job.description}</p>
+          <div className="mt-4 flex gap-2">
+            <Button onClick={handleApplyExtraction} loading={applyingExtraction}>
+              Apply changes
+            </Button>
+            <Button variant="ghost" onClick={() => setPendingExtraction(null)}>
+              Cancel
+            </Button>
           </div>
         </section>
+      )}
 
-        <MatchResultPanel
-          analysis={analysis}
-          profileName={profile.name}
-          jobTitle={`${job.title} @ ${job.company}`}
-        />
+      {requirements.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {requirements.slice(0, 8).map((req) => (
+            <Badge key={req} variant="info">
+              {req}
+            </Badge>
+          ))}
+        </div>
+      )}
 
-        <CompanyResearchPanel
-          job={job}
-          onUpdated={(brief: CompanyBrief) => setJob({ ...job, company_brief: brief })}
-        />
+      <div className="mt-6">
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-text-muted">
+          Description
+        </h3>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{job.description}</p>
+      </div>
+    </section>
+  );
 
-        {analysis && (
-          <ResumeOptimizationPanel
-            analysis={analysis}
-            profileId={profile.id}
-            onApplied={() => {
-              /* profile updated in place; user can re-analyze */
-            }}
-            onReAnalyze={handleAnalyze}
-          />
+  return (
+    <Layout title={job.title} subtitle={`${job.company}${job.location ? ` · ${job.location}` : ""}`}>
+      <div className="space-y-6">
+        <Link to="/" className="text-sm text-text-muted hover:text-accent lg:hidden">
+          ← Pipeline
+        </Link>
+
+        {error && <ErrorBanner message={error} />}
+
+        {reExtracting && <AiLoadingState variant="job-extract" size="sm" />}
+
+        {fromIntake ? (
+          <>
+            <section ref={matchSectionRef}>
+              <JobDetailTabs
+                job={job}
+                analysis={analysis}
+                profileName={profile.name}
+                showProgress={fromIntake || analysisPending}
+                onJobUpdated={setJob}
+                onReAnalyze={handleAnalyze}
+                profileId={profile.id}
+              />
+            </section>
+            {jobDetailsSection}
+          </>
+        ) : (
+          <>
+            {jobDetailsSection}
+            <section ref={matchSectionRef}>
+              <JobDetailTabs
+                job={job}
+                analysis={analysis}
+                profileName={profile.name}
+                showProgress={fromIntake || analysisPending}
+                onJobUpdated={setJob}
+                onReAnalyze={handleAnalyze}
+                profileId={profile.id}
+              />
+            </section>
+          </>
         )}
-
-        {analysis && <CoverLetterPanel analysis={analysis} />}
-      </main>
+      </div>
     </Layout>
   );
 }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { LLMProvider } from "../types/settings";
 import { normalizeProvider } from "../types/settings";
+import { AiLoadingState } from "../components/AiLoadingState";
 import { Layout } from "../components/Layout";
 import { OnboardingSteps } from "../components/OnboardingSteps";
 import { ProviderForm } from "../components/ProviderForm";
@@ -32,8 +33,8 @@ export function AiProviderPage() {
   }, []);
 
   return (
-    <Layout subtitle="Connect your AI provider">
-      <main className="mx-auto max-w-2xl space-y-8 px-6 py-12">
+    <Layout showSidebar={false}>
+      <div className="mx-auto max-w-2xl space-y-8 px-6 py-12">
         <OnboardingSteps current={1} />
 
         <div>
@@ -45,9 +46,7 @@ export function AiProviderPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-          </div>
+          <AiLoadingState variant="page" size="md" />
         ) : (
           <ProviderForm
             initialProvider={initialProvider}
@@ -73,7 +72,7 @@ export function AiProviderPage() {
             Back
           </Button>
         </div>
-      </main>
+      </div>
     </Layout>
   );
 }

@@ -1,3 +1,5 @@
+import React from "react";
+
 interface FieldProps {
   label: string;
   children: React.ReactNode;
@@ -40,14 +42,17 @@ export function Select({ className = "", children, ...props }: SelectProps) {
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
 
-export function Textarea({ className = "", ...props }: TextareaProps) {
-  return (
-    <textarea
-      className={`w-full resize-y rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text placeholder:text-text-muted/50 outline-none transition focus:border-accent focus:ring-1 focus:ring-accent ${className}`}
-      {...props}
-    />
-  );
-}
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  function Textarea({ className = "", ...props }, ref) {
+    return (
+      <textarea
+        ref={ref}
+        className={`w-full resize-y rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-text placeholder:text-text-muted/50 outline-none transition focus:border-accent focus:ring-1 focus:ring-accent ${className}`}
+        {...props}
+      />
+    );
+  },
+);
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost";
@@ -93,7 +98,7 @@ interface CardProps {
 
 export function Card({ title, description, children, action }: CardProps) {
   return (
-    <section className="rounded-xl border border-border bg-surface-raised">
+    <section className="rounded-xl border border-border bg-surface-raised shadow-sm">
       <div className="flex items-start justify-between border-b border-border px-5 py-4">
         <div>
           <h2 className="text-base font-semibold text-text">{title}</h2>

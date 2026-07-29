@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { Job, MatchAnalysis } from "../types";
 import { JobBoard } from "../components/JobBoard";
 import { Layout } from "../components/Layout";
+import { AiLoadingState, PageLoader } from "../components/AiLoadingState";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { pendingAnalysesCount, scoreFromResult, latestAnalysisForJob } from "../lib/matches";
 import { Button } from "../components/ui";
@@ -69,10 +70,8 @@ export function HomePage() {
 
   if (loading || !profile) {
     return (
-      <Layout showNav={false}>
-        <main className="flex min-h-[50vh] items-center justify-center">
-          <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </main>
+      <Layout title="Pipeline" subtitle="Your job opportunities">
+        <PageLoader variant="page" />
       </Layout>
     );
   }
@@ -91,9 +90,9 @@ export function HomePage() {
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
 
   return (
-    <Layout subtitle="Your job pipeline">
-      <main className="mx-auto max-w-6xl space-y-8 px-6 py-8">
-        <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface-raised via-surface-raised to-accent/10 p-6 sm:p-8">
+    <Layout title="Pipeline" subtitle="Your job opportunities">
+      <div className="space-y-8">
+        <section className="rounded-2xl border border-border bg-surface-raised p-6 shadow-sm sm:p-8">
           <div className="relative z-10 flex flex-wrap items-start justify-between gap-6">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-accent">Your profile</p>
@@ -134,14 +133,12 @@ export function HomePage() {
           </div>
 
           {dataLoading ? (
-            <div className="flex justify-center py-16">
-              <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-            </div>
+            <AiLoadingState variant="page" size="md" />
           ) : (
             <JobBoard jobs={jobs} analyses={analyses} profileId={profile.id} />
           )}
         </section>
-      </main>
+      </div>
     </Layout>
   );
 }
