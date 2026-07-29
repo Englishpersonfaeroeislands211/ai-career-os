@@ -11,6 +11,7 @@ Documentation for the AI Career OS project — an open-source, explainable AI ca
 | [Vision](vision.md) | Long-term product direction |
 | [Architecture](architecture.md) | System design and data model |
 | [Milestones](milestones/README.md) | Incremental build plan |
+| [Refactor plan](refactor-plan.md) | Codebase refactor phases (baseline → layering) |
 
 ## Current status (2026-07-29)
 
