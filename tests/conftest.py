@@ -20,6 +20,24 @@ def deterministic_embedding_provider(monkeypatch: pytest.MonkeyPatch) -> None:
         "app.services.match.formatters.get_embedding_provider",
         lambda: provider,
     )
+    monkeypatch.setattr(
+        "app.services.match.analyzer.get_embedding_provider",
+        lambda: provider,
+    )
+    monkeypatch.setattr(
+        "app.api.profiles.get_embedding_provider",
+        lambda: provider,
+    )
+
+
+@pytest.fixture(autouse=True)
+def noop_profile_indexing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """API tests use mocked DB sessions — skip pgvector indexing there."""
+
+    async def _noop(*_args, **_kwargs) -> int:
+        return 0
+
+    monkeypatch.setattr("app.api.profiles.index_profile_chunks", _noop)
 
 
 @pytest.fixture

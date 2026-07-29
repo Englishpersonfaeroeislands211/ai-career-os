@@ -9,6 +9,8 @@ from app.services.llm.factory import create_llm_client
 from app.services.llm.openai_compatible import (
     OpenAICompatibleClient,
     build_openai_compatible_config,
+    is_reasoning_model,
+    normalize_message_content,
 )
 from app.services.settings_service import EffectiveLLMSettings
 
@@ -130,3 +132,47 @@ def test_factory_rejects_unimplemented_anthropic_provider():
                 base_url=None,
             )
         )
+
+
+def test_is_reasoning_model_detects_nemotron_and_gpt_oss():
+    assert is_reasoning_model("nvidia/llama-3.3-nemotron-super-49b-v1.5")
+    assert is_reasoning_model("openai/gpt-oss-120b")
+    assert not is_reasoning_model("meta/llama-3.3-70b-instruct")
+
+
+def test_normalize_message_content_supports_text_parts():
+    assert normalize_message_content([{"type": "text", "text": " hello "}]) == "hello"
+
+
+@pytest.mark.asyncio
+async def test_nvidia_reasoning_model_disables_thinking_and_raises_max_tokens():
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": json.dumps(_resume_payload())}}],
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as http_client:
+        client = OpenAICompatibleClient(
+            build_openai_compatible_config(
+                model="nvidia/llama-3.3-nemotron-super-49b-v1.5",
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key="nvapi-test",
+                provider="nvidia",
+            ),
+            http_client=http_client,
+        )
+        await client.generate_structured(
+            messages=[Message(role="user", content="Extract resume fields.")],
+            response_model=ResumeExtraction,
+            max_tokens=768,
+        )
+
+    assert captured["payload"]["chat_template_kwargs"] == {"enable_thinking": False}
+    assert captured["payload"]["max_tokens"] == 4096

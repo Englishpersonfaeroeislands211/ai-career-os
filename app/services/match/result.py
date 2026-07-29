@@ -1,8 +1,24 @@
 from app.schemas.match_analysis import MatchResult
+from app.schemas.rag import ScoredChunk
 
 
-def full_result_payload(result: MatchResult) -> dict:
-    return {"depth": "full", **result.model_dump()}
+def full_result_payload(
+    result: MatchResult,
+    *,
+    rag_chunks: list[ScoredChunk] | None = None,
+) -> dict:
+    payload = {"depth": "full", **result.model_dump()}
+    if rag_chunks:
+        payload["retrieved_chunks"] = [
+            {
+                "id": item.chunk.id,
+                "score": round(item.score, 4),
+                "text": item.chunk.text,
+                "section": item.chunk.section,
+            }
+            for item in rag_chunks
+        ]
+    return payload
 
 
 def match_result_from_analysis_payload(result: dict) -> MatchResult:

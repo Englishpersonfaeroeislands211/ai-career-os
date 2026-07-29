@@ -6,6 +6,7 @@ export type LLMProvider =
   | "mistral"
   | "together"
   | "azure_openai"
+  | "nvidia"
   | "local";
 
 export type LocalPreset = "ollama" | "lmstudio" | "custom";
@@ -142,6 +143,15 @@ export const PROVIDER_REGISTRY: Record<LLMProvider, ProviderMeta> = {
     category: "cloud",
     defaultModel: "gpt-4o-mini",
     defaultBaseUrl: null,
+    requiresApiKey: true,
+    showBaseUrl: true,
+  },
+  nvidia: {
+    label: "NVIDIA NIM",
+    description: "Hosted models via build.nvidia.com — Nemotron, Llama, Qwen, and more",
+    category: "cloud",
+    defaultModel: "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    defaultBaseUrl: "https://integrate.api.nvidia.com/v1",
     requiresApiKey: true,
     showBaseUrl: true,
   },

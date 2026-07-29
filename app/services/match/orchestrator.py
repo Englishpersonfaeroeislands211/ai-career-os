@@ -27,9 +27,9 @@ async def run_match_analysis(analysis_id: UUID) -> None:
             return
 
         try:
-            result = await analyze_match(db, profile, job)
+            result, rag_chunks = await analyze_match(db, profile, job)
             analysis.status = "completed"
-            analysis.result = full_result_payload(result)
+            analysis.result = full_result_payload(result, rag_chunks=rag_chunks)
             analysis.error = None
             logger.info(
                 "Match analysis completed: id=%s score=%.1f recommendation=%s",

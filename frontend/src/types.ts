@@ -106,6 +106,14 @@ export interface MatchResult {
   strengths: MatchStrength[];
   gaps: MatchGap[];
   summary: string;
+  retrieved_chunks?: RetrievedChunk[];
+}
+
+export interface RetrievedChunk {
+  id: string;
+  score: number;
+  text: string;
+  section: string;
 }
 
 export interface ResumeSuggestion {

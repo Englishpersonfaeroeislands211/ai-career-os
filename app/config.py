@@ -11,7 +11,13 @@ class Settings(BaseSettings):
 
     # Match analysis: retrieve relevant resume chunks before LLM call
     match_rag_enabled: bool = True
-    match_rag_top_k: int = 15
+    match_rag_top_k: int = 10
+    match_rag_embed_model: str = "BAAI/bge-small-en-v1.5"
+    match_rag_embed_dims: int = 384
+    match_rag_per_requirement: bool = True
+    match_rag_per_requirement_top_k: int = 3
+    match_compact_job_prompt: bool = True
+    match_llm_max_tokens: int = 768
 
     # Optional env fallbacks for LLM (overridden by DB settings when set)
     openai_api_key: str | None = None
@@ -21,6 +27,7 @@ class Settings(BaseSettings):
     mistral_api_key: str | None = None
     together_api_key: str | None = None
     azure_openai_api_key: str | None = None
+    nvidia_api_key: str | None = None
 
 
 settings = Settings()

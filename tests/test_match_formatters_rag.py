@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
-from types import SimpleNamespace
+
+import pytest
 
 from app.services.match.formatters import build_match_user_message
 from app.services.rag import DeterministicEmbeddingProvider
@@ -10,6 +11,8 @@ FIXTURE_DIR = Path(__file__).parent / "evals" / "fixtures" / "match" / "senior_p
 
 def _fixture_profile():
     structured_data = json.loads((FIXTURE_DIR / "profile.json").read_text(encoding="utf-8"))
+    from types import SimpleNamespace
+
     return SimpleNamespace(
         structured_data=structured_data,
         resume_text="Jane Doe resume text",
@@ -18,16 +21,21 @@ def _fixture_profile():
 
 def _fixture_job():
     job = json.loads((FIXTURE_DIR / "job.json").read_text(encoding="utf-8"))
+    from types import SimpleNamespace
+
     return SimpleNamespace(
         title=job["title"],
         company=job["company"],
         description=job["description"],
         location=None,
+        raw_metadata={"requirements": ["Python", "FastAPI", "PostgreSQL"]},
     )
 
 
-def test_build_match_user_message_with_rag():
-    message = build_match_user_message(
+@pytest.mark.asyncio
+async def test_build_match_user_message_with_rag():
+    message = await build_match_user_message(
+        None,
         _fixture_profile(),
         _fixture_job(),
         use_rag=True,
@@ -43,8 +51,10 @@ def test_build_match_user_message_with_rag():
     assert "Structured resume:" not in message
 
 
-def test_build_match_user_message_without_rag():
-    message = build_match_user_message(
+@pytest.mark.asyncio
+async def test_build_match_user_message_without_rag():
+    message = await build_match_user_message(
+        None,
         _fixture_profile(),
         _fixture_job(),
         use_rag=False,

@@ -47,7 +47,7 @@ Long-term vision: an autonomous career assistant that discovers jobs, explains f
 
 - **PDF resume ingestion** — deterministic text extraction with `pypdf`
 - **LLM structured extraction** — skills, experience, education, projects into a typed schema
-- **Bring your own model** — OpenAI, Anthropic, Groq, Mistral, Together, Azure OpenAI, or **local** (Ollama / LM Studio)
+- **Bring your own model** — OpenAI, Anthropic, Groq, Mistral, Together, Azure OpenAI, NVIDIA NIM, or **local** (Ollama / LM Studio)
 - **Model picker** — fetches available models from your provider
 - **Human review** — edit extracted fields before saving (resume and job)
 - **Job intake wizard** — paste description → extract → review → save with automatic match
@@ -171,7 +171,8 @@ App: http://127.0.0.1:5173
 
 ### Fresh database / reset migrations
 
-If you had an older dev database from pre-release migrations:
+PostgreSQL runs with **pgvector** (`pgvector/pgvector:pg16`) for resume embedding search.
+If you had an older dev database or plain `postgres:16` image:
 
 ```bash
 docker compose down -v

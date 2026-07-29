@@ -9,6 +9,7 @@ LLMProvider = Literal[
     "mistral",
     "together",
     "azure_openai",
+    "nvidia",
     "local",
 ]
 
@@ -121,6 +122,15 @@ PROVIDER_REGISTRY: dict[LLMProvider, ProviderMeta] = {
         requires_api_key=True,
         show_base_url=True,
     ),
+    "nvidia": ProviderMeta(
+        label="NVIDIA NIM",
+        description="Hosted models via build.nvidia.com — Nemotron, Llama, Qwen, and more",
+        category="cloud",
+        default_model="nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        default_base_url="https://integrate.api.nvidia.com/v1",
+        requires_api_key=True,
+        show_base_url=True,
+    ),
     "local": ProviderMeta(
         label="Local / Self-hosted",
         description="Ollama, LM Studio, or any OpenAI-compatible server",
@@ -147,6 +157,7 @@ PROVIDER_ENV_KEYS: dict[LLMProvider, str] = {
     "mistral": "mistral_api_key",
     "together": "together_api_key",
     "azure_openai": "azure_openai_api_key",
+    "nvidia": "nvidia_api_key",
 }
 
 CLOUD_PROVIDERS: list[LLMProvider] = [
@@ -154,7 +165,7 @@ CLOUD_PROVIDERS: list[LLMProvider] = [
 ]
 
 OPENAI_COMPATIBLE_PROVIDERS: frozenset[LLMProvider] = frozenset(
-    {"openai", "local", "groq", "mistral", "together", "azure_openai"}
+    {"openai", "local", "groq", "mistral", "together", "azure_openai", "nvidia"}
 )
 
 

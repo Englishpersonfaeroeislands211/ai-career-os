@@ -62,6 +62,7 @@ async def test_analyze_match_pipeline_with_mocked_llm(case_name: str, case_dir: 
         company=job_data["company"],
         description=job_data["description"],
         location=job_data.get("location"),
+        raw_metadata=job_data.get("raw_metadata", {}),
     )
 
     golden = MatchResult.model_validate(normalize_match_payload(llm_response))
@@ -72,7 +73,7 @@ async def test_analyze_match_pipeline_with_mocked_llm(case_name: str, case_dir: 
         "app.services.match.analyzer.get_llm_client",
         new=AsyncMock(return_value=mock_client),
     ):
-        result = await analyze_match(db=None, profile=profile, job=job)
+        result, _rag_chunks = await analyze_match(db=None, profile=profile, job=job)
 
     mock_client.generate_structured.assert_awaited_once()
     call_kwargs = mock_client.generate_structured.await_args.kwargs
@@ -86,7 +87,8 @@ async def test_analyze_match_pipeline_with_mocked_llm(case_name: str, case_dir: 
     assert not failures, "\n".join(failures)
 
 
-def test_build_match_user_message_uses_structured_profile():
+@pytest.mark.asyncio
+async def test_build_match_user_message_uses_structured_profile():
     profile = SimpleNamespace(
         structured_data={"name": "Jane Doe", "skills": ["Python"]},
         resume_text="Plain resume text",
@@ -96,25 +98,28 @@ def test_build_match_user_message_uses_structured_profile():
         company="Acme",
         description="Build APIs",
         location="Remote",
+        raw_metadata={},
     )
 
-    message = build_match_user_message(profile, job)
+    message = await build_match_user_message(None, profile, job)
     assert "Jane Doe" in message
     assert "Backend Engineer" in message
     assert "Retrieved resume evidence" in message
     assert "Plain resume text" not in message
 
 
-def test_build_match_user_message_falls_back_to_resume_text():
+@pytest.mark.asyncio
+async def test_build_match_user_message_falls_back_to_resume_text():
     profile = SimpleNamespace(structured_data=None, resume_text="Plain resume text")
     job = SimpleNamespace(
         title="Backend Engineer",
         company="Acme",
         description="Build APIs",
         location=None,
+        raw_metadata={},
     )
 
-    message = build_match_user_message(profile, job)
+    message = await build_match_user_message(None, profile, job)
     assert "Plain resume text" in message
 
 
@@ -146,6 +151,7 @@ async def test_live_llm_match_senior_python_backend():
         company=job_data["company"],
         description=job_data["description"],
         location=job_data.get("location"),
+        raw_metadata=job_data.get("raw_metadata", {}),
     )
 
     engine = create_async_engine(settings.database_url)
@@ -153,7 +159,7 @@ async def test_live_llm_match_senior_python_backend():
 
     try:
         async with session_factory() as db:
-            result = await analyze_match(db, profile, job)
+            result, _rag_chunks = await analyze_match(db, profile, job)
     finally:
         await engine.dispose()
 

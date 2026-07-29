@@ -22,7 +22,9 @@ class DeterministicEmbeddingProvider:
     Not semantically rich; only guarantees overlapping tokens score higher.
     """
 
-    def __init__(self, dims: int = 256) -> None:
+    model_name = "deterministic-test"
+
+    def __init__(self, dims: int = 384) -> None:
         self.dims = dims
 
     def embed(self, texts: list[str]) -> list[list[float]]:
@@ -31,6 +33,8 @@ class DeterministicEmbeddingProvider:
 
 class FastEmbedProvider:
     """Local ONNX embeddings via fastembed (used in production match retrieval)."""
+
+    model_name = "BAAI/bge-small-en-v1.5"
 
     def __init__(self, model_name: str = "BAAI/bge-small-en-v1.5") -> None:
         self.model_name = model_name

@@ -30,4 +30,5 @@ class LLMClient(Protocol):
         response_model: type[T],
         *,
         transform_payload: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+        max_tokens: int | None = None,
     ) -> T: ...

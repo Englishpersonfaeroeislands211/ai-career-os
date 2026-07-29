@@ -266,7 +266,8 @@ Example Output
 
 Output Rules
 
-- Return ONLY valid JSON.
+- Return only valid JSON.
+- Include at most 4 strengths and 4 gaps — pick the most important ones.
 - Do NOT use markdown.
 - Do NOT use code fences.
 - Do NOT include explanations.

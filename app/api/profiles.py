@@ -16,6 +16,8 @@ from app.schemas import (
     ProfileUpdate,
     ResumeParseRead,
 )
+from app.services.rag.indexing import index_profile_chunks
+from app.services.rag.retrieval import get_embedding_provider
 from app.services.resume_parser import extract_text_from_pdf
 from app.services.resume_pdf_export import (
     build_profile_resume_pdf,
@@ -36,6 +38,8 @@ async def create_profile(body: ProfileCreate, db: AsyncSession = Depends(get_db)
     db.add(profile)
     await db.commit()
     await db.refresh(profile)
+    await index_profile_chunks(db, profile, get_embedding_provider())
+    await db.commit()
     return profile
 
 
@@ -115,6 +119,8 @@ async def update_profile(
 
     await db.commit()
     await db.refresh(profile)
+    await index_profile_chunks(db, profile, get_embedding_provider())
+    await db.commit()
     return profile
 
 
@@ -146,6 +152,8 @@ async def apply_resume_suggestions(
 
     await db.commit()
     await db.refresh(profile)
+    await index_profile_chunks(db, profile, get_embedding_provider())
+    await db.commit()
     logger.info(
         "Applied %d resume suggestions to profile %s",
         len(body.suggestions),

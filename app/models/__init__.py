@@ -26,6 +26,10 @@ class Profile(Base):
     )
 
     match_analyses: Mapped[list["MatchAnalysis"]] = relationship(back_populates="profile")
+    chunk_embeddings: Mapped[list["ResumeChunkEmbedding"]] = relationship(
+        back_populates="profile",
+        cascade="all, delete-orphan",
+    )
 
 
 class Job(Base):
@@ -87,3 +91,15 @@ class AppSettings(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+from app.models.rag_embeddings import ResumeChunkEmbedding  # noqa: E402
+
+__all__ = [
+    "AppSettings",
+    "Base",
+    "Job",
+    "MatchAnalysis",
+    "Profile",
+    "ResumeChunkEmbedding",
+]

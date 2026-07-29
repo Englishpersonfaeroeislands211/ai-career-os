@@ -28,15 +28,17 @@ async def test_analyze_match_calls_llm_client():
         company="Acme",
         description="Python required",
         location=None,
+        raw_metadata={},
     )
 
     with patch(
         "app.services.match.analyzer.get_llm_client",
         new=AsyncMock(return_value=mock_client),
     ):
-        output = await analyze_match(db=None, profile=profile, job=job)
+        output, rag_chunks = await analyze_match(db=None, profile=profile, job=job)
 
     assert output.score == 85.0
+    assert isinstance(rag_chunks, list)
     mock_client.generate_structured.assert_awaited_once()
 
 
@@ -55,6 +57,7 @@ async def test_analyze_match_propagates_configuration_error():
                     company="Co",
                     description="Desc",
                     location=None,
+                    raw_metadata={},
                 ),
             )
 
@@ -112,7 +115,7 @@ async def test_run_match_analysis_marks_completed():
         patch("app.services.match.orchestrator.async_session", return_value=mock_context),
         patch(
             "app.services.match.orchestrator.analyze_match",
-            new=AsyncMock(return_value=match_result),
+            new=AsyncMock(return_value=(match_result, [])),
         ),
     ):
         await run_match_analysis(analysis_id)

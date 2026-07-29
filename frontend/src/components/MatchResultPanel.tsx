@@ -80,6 +80,29 @@ function ResultContent({ result }: { result: MatchResult }) {
           </ul>
         </div>
       )}
+
+      {!isLegacyScreen && (result.retrieved_chunks?.length ?? 0) > 0 && (
+        <div>
+          <h3 className="mb-3 text-sm font-medium text-text-muted">Resume evidence used</h3>
+          <ul className="space-y-2">
+            {result.retrieved_chunks!.map((chunk) => (
+              <li
+                key={chunk.id}
+                className="rounded-lg border border-border bg-surface-elevated px-4 py-3"
+              >
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <Badge variant="info">{chunk.section}</Badge>
+                  <span className="font-mono text-xs text-text-muted">{chunk.id}</span>
+                  <span className="text-xs text-text-muted">
+                    relevance {(chunk.score * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <p className="text-sm text-text">{chunk.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
