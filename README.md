@@ -24,6 +24,7 @@ Upload a resume PDF, extract structured profile data with an LLM you control, re
 - [Roadmap](#roadmap)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
+- [Community](#community)
 
 ---
 
@@ -50,7 +51,7 @@ Long-term vision: an autonomous career assistant that discovers jobs, explains f
 - **Model picker** — fetches available models from your provider
 - **Human review** — edit extracted fields before saving (resume and job)
 - **Job intake wizard** — paste description → extract → review → save with automatic match
-- **Progressive match** — fast screen score while full analysis runs; strengths/gaps when complete
+- **RAG-backed match** — retrieves relevant resume chunks before full analysis
 - **Job pipeline** — home dashboard ranks jobs by match score with polling
 - **Job detail tabs** — match, company research, resume optimization, cover letter (after full analysis)
 - **Explainable match analysis** — score, strengths, gaps, and evidence-backed recommendations
@@ -76,7 +77,7 @@ flowchart LR
     G --> H[Review fields]
     H --> I[Save and analyze]
     E --> I
-    I --> J[Screen then full match]
+    I --> J[RAG + full match]
     J --> K[Pipeline + job detail tabs]
     K --> L[Research / Resume / Cover letter]
 ```
@@ -86,7 +87,7 @@ flowchart LR
 3. **Review** on onboarding — fix anything the model got wrong
 4. **Save** profile with raw text + structured JSONB snapshot
 5. **Add a job** — paste description → extract → **review step** → save with `profile_id`
-6. **Progressive match** — screen score quickly, then full `MatchResult` in background
+6. **Match analysis** — RAG retrieves resume evidence, then full `MatchResult` in background
 7. **Job detail** — after full analysis: company research, resume tweaks, cover letter
 8. **Home pipeline** — jobs ranked by score; open any job for deep dive or re-analyze
 
@@ -283,6 +284,7 @@ ai-career-os/
 │       ├── resume_structurer.py
 │       ├── job_structurer.py
 │       ├── match/          # analyzer, orchestrator, formatters, result
+│       ├── rag/            # chunking, embeddings, retrieval for match
 │       ├── company_research.py
 │       ├── cover_letter_generator.py
 │       └── resume_optimizer.py
@@ -338,10 +340,10 @@ Full interactive docs: http://127.0.0.1:8000/docs
 | **M2** Job intake | Done | Paste JD → structured extraction → review |
 | **M3** Match on job insert | Done | Full analysis automatically when a job is saved |
 | **M4** Resume optimization | Done | Gap-driven suggestions with review before apply |
-| **M5** Progressive match + cover letter | Done | Fast screen at intake; 3-pass cover letter chain |
+| **M5** Cover letter | Done | 3-pass cover letter chain on job detail |
 | **M6** Company research | Done | Bounded agent loop + web search + source-grounded brief |
 | **M7** Job discovery | **Next** | Official APIs for job feeds |
-| — | Planned | RAG for match evidence, Tavily/Serper search, brief → cover letter |
+| — | In progress | RAG citations in UI, Tavily/Serper search, brief → cover letter |
 
 Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/project-status.md](docs/project-status.md)
 
@@ -362,7 +364,7 @@ Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/p
 | [docs/architecture.md](docs/architecture.md) | System design and data model |
 | [docs/project-status.md](docs/project-status.md) | Current state and what's next |
 | [docs/milestones/m6-company-research.md](docs/milestones/m6-company-research.md) | M6 agent loop + company brief |
-| [docs/milestones/m5-progressive-match-cover-letter.md](docs/milestones/m5-progressive-match-cover-letter.md) | Progressive match + cover letter |
+| [docs/milestones/m5-progressive-match-cover-letter.md](docs/milestones/m5-progressive-match-cover-letter.md) | Cover letter milestone (historical) |
 | [docs/milestones/m3-match-on-intake.md](docs/milestones/m3-match-on-intake.md) | Match on job save |
 | [docs/milestones/README.md](docs/milestones/README.md) | Full roadmap |
 
@@ -370,40 +372,28 @@ Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/p
 
 ## Contributing
 
-Contributions welcome — especially around:
+Contributions welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, PR
+expectations, and areas where help is needed.
 
-- LLM provider adapters (Anthropic native structured output, Google Gemini)
-- Extraction and match quality — eval fixtures (sample resumes/jobs + expected fields)
-- RAG for match evidence (resume chunk retrieval per requirement)
-- Tavily/Serper as configurable search providers
-- Documentation and DX improvements
+Quick checklist:
 
-### Commit messages
-
-Use [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <short description>
-
-[optional body explaining why]
-```
-
-Common types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci`
-
-Examples:
-
-```
-feat(matcher): add explainable match analysis with eval harness
-docs(readme): update roadmap for completed M1
-fix(api): poll match analysis until terminal status
-```
-
-1. Fork the repo
-2. Create a feature branch
-3. Run `uv run pytest` and `uv run ruff check app tests`
-4. Open a pull request with a clear description
+1. Fork the repo and branch from `main`
+2. Run `uv run pytest` and `uv run ruff check app tests`
+3. Open a pull request using the template
 
 Please do not commit `.env` files or API keys.
+
+---
+
+## Community
+
+| Resource | Description |
+|----------|-------------|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to set up, test, and submit changes |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards (Contributor Covenant) |
+| [SECURITY.md](SECURITY.md) | How to report vulnerabilities privately |
+| [Issue templates](.github/ISSUE_TEMPLATE/) | Bug reports and feature requests |
+| [PR template](.github/pull_request_template.md) | Pull request checklist |
 
 ---
 
