@@ -72,7 +72,7 @@ flowchart LR
 | Cover letter (draft) | `CoverLetterDraft` | `cover_letter_draft.txt` | — |
 | Cover letter (critique) | `CoverLetterCritique` | `cover_letter_critique.txt` | — |
 | Cover letter (revise) | `CoverLetterResult` | `cover_letter_revise.txt` | `cover_letter_normalize.py` |
-| Company research (plan) | `ResearchPlan` | `company_research_plan.txt` | — |
+| Company research (agent step) | `ResearchAgentStep` | `company_research_agent.txt` | — |
 | Company research (synthesize) | `CompanyBriefContent` | `company_research_synthesize.txt` | — |
 
 Each task follows the same pattern:
@@ -150,7 +150,7 @@ tool_call | operation=web_search provider=duckduckgo query="FinTech Labs culture
 
 Implementation: `app/services/search/tracing.py`, wired in `app/services/search/duckduckgo.py`.
 
-Company research is a **bounded orchestration** — plan (LLM) → search (tool) → synthesize (LLM) — not a ReAct agent loop.
+Company research is a **bounded agent loop** — decide (LLM) → search (tool) → repeat or synthesize (LLM) — max 5 steps / 5 searches, not an open ReAct framework.
 
 ## Context engineering
 

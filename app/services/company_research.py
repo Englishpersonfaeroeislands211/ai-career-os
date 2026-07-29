@@ -5,22 +5,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Job
 from app.prompts import load_prompt
 from app.schemas.company_research import (
-    MAX_RESEARCH_QUERIES,
+    MAX_AGENT_SEARCHES,
+    MAX_AGENT_STEPS,
     MAX_SEARCH_RESULTS_PER_QUERY,
     CompanyBrief,
     CompanyBriefContent,
-    ResearchPlan,
+    ResearchAgentStep,
     SearchResult,
 )
 from app.services.llm import Message, get_llm_client
 from app.services.matcher import _format_job
 from app.services.search import SearchClient, get_search_client
+from app.services.search.tracing import AgentStepTrace, log_agent_step
 
 
 def _format_job_for_research(job: Job) -> str:
     parts = [_format_job(job)]
     if job.url:
-        parts.append(f"\nJob posting URL: {job.url}")
+        parts.append(f"\nJob URL: {job.url}")
     return "\n".join(parts)
 
 
@@ -42,8 +44,31 @@ def _format_search_results(results: list[SearchResult]) -> str:
     return "\n\n".join(blocks)
 
 
-def build_research_plan_user_message(job: Job) -> str:
-    return f"Target job:\n\n{_format_job_for_research(job)}"
+def build_research_agent_user_message(
+    job: Job,
+    search_results: list[SearchResult],
+    *,
+    step: int,
+    max_steps: int,
+    searches_done: int,
+    max_searches: int,
+) -> str:
+    return "\n\n".join(
+        [
+            f"Research step {step} of {max_steps}.",
+            f"Searches used: {searches_done}/{max_searches}.",
+            f"Target job:\n\n{_format_job_for_research(job)}",
+            (
+                f"Results collected so far:\n\n{_format_search_results(search_results)}"
+                if search_results
+                else "No search results yet."
+            ),
+            (
+                "Choose action=search with one new query, or action=synthesize "
+                "if you have enough evidence for the brief."
+            ),
+        ]
+    )
 
 
 def build_research_synthesize_user_message(job: Job, search_results: list[SearchResult]) -> str:
@@ -67,36 +92,65 @@ def _dedupe_search_results(results: list[SearchResult]) -> list[SearchResult]:
     return unique
 
 
-async def _run_searches(search_client: SearchClient, plan: ResearchPlan) -> list[SearchResult]:
+async def _run_agent_search_loop(
+    llm,
+    search_client: SearchClient,
+    job: Job,
+) -> list[SearchResult]:
     collected: list[SearchResult] = []
-    for query in plan.queries[:MAX_RESEARCH_QUERIES]:
-        query = query.strip()
+    searches_done = 0
+
+    for step in range(1, MAX_AGENT_STEPS + 1):
+        agent_step = await llm.generate_structured(
+            messages=[
+                Message(role="system", content=load_prompt("company_research_agent")),
+                Message(
+                    role="user",
+                    content=build_research_agent_user_message(
+                        job,
+                        collected,
+                        step=step,
+                        max_steps=MAX_AGENT_STEPS,
+                        searches_done=searches_done,
+                        max_searches=MAX_AGENT_SEARCHES,
+                    ),
+                ),
+            ],
+            response_model=ResearchAgentStep,
+        )
+
+        log_agent_step(
+            AgentStepTrace(
+                step=step,
+                max_steps=MAX_AGENT_STEPS,
+                action=agent_step.action,
+                query=agent_step.query,
+                rationale=agent_step.rationale,
+                searches_done=searches_done,
+                total_results=len(collected),
+            )
+        )
+
+        if agent_step.action == "synthesize":
+            break
+
+        if searches_done >= MAX_AGENT_SEARCHES:
+            break
+
+        query = (agent_step.query or "").strip()
         if not query:
             continue
+
         batch = await search_client.search(query, max_results=MAX_SEARCH_RESULTS_PER_QUERY)
-        collected.extend(batch)
-    return _dedupe_search_results(collected)
+        collected = _dedupe_search_results([*collected, *batch])
+        searches_done += 1
+
+    return collected
 
 
-async def research_company(
-    db: AsyncSession,
-    job: Job,
-    *,
-    search_client: SearchClient | None = None,
-) -> CompanyBrief:
-    llm = await get_llm_client(db)
-    client = search_client or await get_search_client(db)
-
-    plan = await llm.generate_structured(
-        messages=[
-            Message(role="system", content=load_prompt("company_research_plan")),
-            Message(role="user", content=build_research_plan_user_message(job)),
-        ],
-        response_model=ResearchPlan,
-    )
-
-    search_results = await _run_searches(client, plan)
-
+async def _synthesize_brief(
+    llm, job: Job, search_results: list[SearchResult]
+) -> CompanyBriefContent:
     content = await llm.generate_structured(
         messages=[
             Message(role="system", content=load_prompt("company_research_synthesize")),
@@ -110,6 +164,20 @@ async def research_company(
 
     if content.company.strip().casefold() != job.company.strip().casefold():
         content = content.model_copy(update={"company": job.company})
+    return content
+
+
+async def research_company(
+    db: AsyncSession,
+    job: Job,
+    *,
+    search_client: SearchClient | None = None,
+) -> CompanyBrief:
+    llm = await get_llm_client(db)
+    client = search_client or await get_search_client(db)
+
+    search_results = await _run_agent_search_loop(llm, client, job)
+    content = await _synthesize_brief(llm, job, search_results)
 
     return CompanyBrief(
         **content.model_dump(),

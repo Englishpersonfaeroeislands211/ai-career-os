@@ -36,3 +36,30 @@ def log_tool_call(trace: ToolCallTrace) -> None:
         logger.info(trace.to_log_line())
     else:
         logger.warning(trace.to_log_line())
+
+
+@dataclass(frozen=True)
+class AgentStepTrace:
+    step: int
+    max_steps: int
+    action: str
+    rationale: str
+    searches_done: int
+    total_results: int
+    query: str | None = None
+
+    def to_log_line(self) -> str:
+        parts = [
+            f"step={self.step}/{self.max_steps}",
+            f"action={self.action}",
+            f"searches_done={self.searches_done}",
+            f"total_results={self.total_results}",
+            f'rationale="{self.rationale[:120]}"',
+        ]
+        if self.query:
+            parts.insert(4, f'query="{self.query[:80]}"')
+        return "agent_step | " + " ".join(parts)
+
+
+def log_agent_step(trace: AgentStepTrace) -> None:
+    logger.info(trace.to_log_line())

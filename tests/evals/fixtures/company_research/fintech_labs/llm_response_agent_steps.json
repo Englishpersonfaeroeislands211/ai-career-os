@@ -1,0 +1,16 @@
+[
+  {
+    "action": "search",
+    "query": "FinTech Labs engineering culture remote",
+    "rationale": "Need remote engineering culture signals before synthesizing."
+  },
+  {
+    "action": "search",
+    "query": "FinTech Labs recent news payments API",
+    "rationale": "Need recent product or hiring news for the brief."
+  },
+  {
+    "action": "synthesize",
+    "rationale": "Collected culture and news snippets; ready to write the brief."
+  }
+]

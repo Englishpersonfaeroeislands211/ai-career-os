@@ -8,11 +8,11 @@ from app.schemas import JobRead
 from app.schemas.company_research import (
     CompanyBrief,
     CompanyBriefContent,
-    ResearchPlan,
+    ResearchAgentStep,
     SearchResult,
 )
 from app.services.company_research import (
-    build_research_plan_user_message,
+    build_research_agent_user_message,
     build_research_synthesize_user_message,
     company_brief_to_storage,
     research_company,
@@ -20,7 +20,7 @@ from app.services.company_research import (
 
 
 @pytest.mark.asyncio
-async def test_research_company_runs_plan_search_synthesize():
+async def test_research_company_runs_agent_search_synthesize():
     job = SimpleNamespace(
         title="Senior Backend Engineer",
         company="FinTech Labs",
@@ -28,12 +28,22 @@ async def test_research_company_runs_plan_search_synthesize():
         location="Remote",
         url="https://example.com/jobs/1",
     )
-    plan = ResearchPlan(
-        queries=[
-            "FinTech Labs engineering culture",
-            "FinTech Labs recent news",
-        ]
-    )
+    agent_steps = [
+        ResearchAgentStep(
+            action="search",
+            query="FinTech Labs engineering culture",
+            rationale="Need culture signals.",
+        ),
+        ResearchAgentStep(
+            action="search",
+            query="FinTech Labs recent news",
+            rationale="Need recent news.",
+        ),
+        ResearchAgentStep(
+            action="synthesize",
+            rationale="Enough evidence collected.",
+        ),
+    ]
     search_results = [
         SearchResult(
             title="FinTech Labs launches new payments API",
@@ -56,7 +66,9 @@ async def test_research_company_runs_plan_search_synthesize():
     )
 
     mock_llm = AsyncMock()
-    mock_llm.generate_structured = AsyncMock(side_effect=[plan, brief_content])
+    mock_llm.generate_structured = AsyncMock(
+        side_effect=[*agent_steps, brief_content],
+    )
 
     mock_search = AsyncMock()
     mock_search.search = AsyncMock(
@@ -76,12 +88,57 @@ async def test_research_company_runs_plan_search_synthesize():
             search_client=mock_search,
         )
 
-    assert mock_llm.generate_structured.await_count == 2
+    assert mock_llm.generate_structured.await_count == 4
     assert mock_search.search.await_count == 2
     assert result.company == "FinTech Labs"
     assert len(result.sources) == 2
     assert result.researched_at is not None
     assert "payment" in result.summary.casefold()
+
+
+@pytest.mark.asyncio
+async def test_research_agent_stops_when_synthesize_requested_on_first_step():
+    job = SimpleNamespace(
+        title="Engineer",
+        company="Acme",
+        description="Build APIs",
+        location=None,
+        url=None,
+    )
+    brief_content = CompanyBriefContent(
+        company="Acme",
+        summary="Acme builds APIs.",
+        culture_signals=[],
+        recent_news=[],
+        interview_signals=[],
+        red_flags=[],
+    )
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_structured = AsyncMock(
+        side_effect=[
+            ResearchAgentStep(
+                action="synthesize",
+                rationale="Job description is enough context for a thin brief.",
+            ),
+            brief_content,
+        ]
+    )
+
+    mock_search = AsyncMock()
+
+    with patch(
+        "app.services.company_research.get_llm_client",
+        new=AsyncMock(return_value=mock_llm),
+    ):
+        result = await research_company(
+            db=None,
+            job=job,
+            search_client=mock_search,
+        )
+
+    mock_search.search.assert_not_called()
+    assert result.sources == []
 
 
 def test_build_research_messages_include_job_and_results():
@@ -100,9 +157,17 @@ def test_build_research_messages_include_job_and_results():
         )
     ]
 
-    plan_message = build_research_plan_user_message(job)
-    assert "Acme" in plan_message
-    assert "Build APIs" in plan_message
+    agent_message = build_research_agent_user_message(
+        job,
+        results,
+        step=2,
+        max_steps=5,
+        searches_done=1,
+        max_searches=5,
+    )
+    assert "Acme" in agent_message
+    assert "Build APIs" in agent_message
+    assert "https://example.com/acme" in agent_message
 
     synth_message = build_research_synthesize_user_message(job, results)
     assert "Acme news" in synth_message

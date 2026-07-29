@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.schemas.company_research import CompanyBriefContent, ResearchPlan, SearchResult
+from app.schemas.company_research import CompanyBriefContent, ResearchAgentStep, SearchResult
 from app.services.company_research import research_company
 from tests.evals.company_research_eval_assertions import (
     evaluate_company_brief,
@@ -25,7 +25,7 @@ def _iter_company_research_cases() -> list[tuple[str, Path]]:
         required = (
             "expected.json",
             "job.json",
-            "llm_response_plan.json",
+            "llm_response_agent_steps.json",
             "llm_response_brief.json",
             "search_results.json",
         )
@@ -51,7 +51,7 @@ async def test_research_company_pipeline_with_mocked_llm_and_search(
     case_dir: Path,
 ):
     job_data = load_json(case_dir / "job.json")
-    plan_response = load_json(case_dir / "llm_response_plan.json")
+    agent_steps_data = load_json(case_dir / "llm_response_agent_steps.json")
     brief_response = load_json(case_dir / "llm_response_brief.json")
     search_data = load_json(case_dir / "search_results.json")
     expected = load_json(case_dir / "expected.json")
@@ -64,12 +64,14 @@ async def test_research_company_pipeline_with_mocked_llm_and_search(
         url=job_data.get("url"),
     )
 
-    plan = ResearchPlan.model_validate(plan_response)
+    agent_steps = [ResearchAgentStep.model_validate(item) for item in agent_steps_data]
     brief_content = CompanyBriefContent.model_validate(brief_response)
     search_results = [SearchResult.model_validate(item) for item in search_data]
 
+    search_queries = [step.query for step in agent_steps if step.action == "search" and step.query]
+
     mock_llm = AsyncMock()
-    mock_llm.generate_structured = AsyncMock(side_effect=[plan, brief_content])
+    mock_llm.generate_structured = AsyncMock(side_effect=[*agent_steps, brief_content])
 
     mock_search = AsyncMock()
     mock_search.search = AsyncMock(
@@ -89,17 +91,20 @@ async def test_research_company_pipeline_with_mocked_llm_and_search(
             search_client=mock_search,
         )
 
-    assert mock_llm.generate_structured.await_count == 2
+    assert mock_llm.generate_structured.await_count == len(agent_steps) + 1
     call_models = [
         call.kwargs["response_model"] for call in mock_llm.generate_structured.await_args_list
     ]
-    assert call_models == [ResearchPlan, CompanyBriefContent]
-    assert mock_search.search.await_count == len(plan.queries)
+    assert call_models[-1] is CompanyBriefContent
+    assert all(model is ResearchAgentStep for model in call_models[:-1])
+    assert mock_search.search.await_count == len(search_queries)
 
-    plan_message = mock_llm.generate_structured.await_args_list[0].kwargs["messages"][-1].content
-    assert job_data["company"] in plan_message
+    first_agent_message = (
+        mock_llm.generate_structured.await_args_list[0].kwargs["messages"][-1].content
+    )
+    assert job_data["company"] in first_agent_message
 
-    synth_message = mock_llm.generate_structured.await_args_list[1].kwargs["messages"][-1].content
+    synth_message = mock_llm.generate_structured.await_args_list[-1].kwargs["messages"][-1].content
     assert search_results[0].url in synth_message
 
     failures = evaluate_company_brief(
