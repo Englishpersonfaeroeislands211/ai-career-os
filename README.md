@@ -267,7 +267,7 @@ docker compose up --build
 ```
 ai-career-os/
 ├── app/
-│   ├── api/              # FastAPI routes
+├── api/              # FastAPI routes (profiles, jobs, match_analyses, settings, llm)
 │   ├── db/               # SQLAlchemy session
 │   ├── models/           # ORM models
 │   ├── prompts/          # Version-controlled LLM prompts (.txt)
@@ -278,7 +278,7 @@ ai-career-os/
 │       ├── resume_parser.py
 │       ├── resume_structurer.py
 │       ├── job_structurer.py
-│       ├── matcher.py
+│       ├── match/          # analyzer, orchestrator, formatters, result
 │       ├── company_research.py
 │       ├── cover_letter_generator.py
 │       └── resume_optimizer.py

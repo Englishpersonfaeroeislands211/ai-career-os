@@ -3,7 +3,6 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
-MAX_RESEARCH_QUERIES = 3
 MAX_SEARCH_RESULTS_PER_QUERY = 5
 MAX_AGENT_STEPS = 5
 MAX_AGENT_SEARCHES = 5
@@ -13,10 +12,6 @@ class SearchResult(BaseModel):
     title: str = Field(min_length=1, max_length=500)
     url: str = Field(min_length=1, max_length=2048)
     snippet: str = Field(min_length=1, max_length=2000)
-
-
-class ResearchPlan(BaseModel):
-    queries: list[str] = Field(min_length=1, max_length=MAX_RESEARCH_QUERIES)
 
 
 class ResearchAgentStep(BaseModel):

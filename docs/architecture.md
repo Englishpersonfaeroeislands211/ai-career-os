@@ -131,14 +131,14 @@ Every analysis is persisted and auditable. This becomes the eval dataset.
 | `resume_structurer.py` | PDF text → `ResumeExtraction` |
 | `job_structurer.py` | Paste → `JobExtraction` |
 | `screening_card.py` | Compress job context for metadata |
-| `matcher.py` | Profile + Job → `MatchResult` (progressive: screen → full) |
+| `match/` | Profile + Job → `MatchResult` (progressive: screen → full) |
 | `company_research.py` | Bounded agent loop → web search → `CompanyBrief` |
 | `cover_letter_generator.py` | 3-pass cover letter chain |
 | `resume_optimizer.py` | Gap-driven resume suggestions |
 | `search/` | `SearchClient` protocol + DuckDuckGo adapter |
 | `llm/` | Provider-agnostic structured output client |
 
-**Note:** `matcher.py` also contains batch/cascade helpers from an archived experiment. They are not exposed via API.
+API routes live under `app/api/` — `profiles.py`, `jobs.py`, `match_analyses.py`, plus `settings` and `llm`.
 
 ## Design decisions
 

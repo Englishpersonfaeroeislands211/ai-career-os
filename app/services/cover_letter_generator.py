@@ -11,8 +11,7 @@ from app.services.cover_letter_normalize import (
     normalize_cover_letter_result_payload,
 )
 from app.services.llm import Message, get_llm_client
-from app.services.matcher import _format_job, _format_profile
-from app.services.resume_optimizer import match_result_from_analysis_payload
+from app.services.match.formatters import format_job, format_profile
 
 
 def build_cover_letter_user_message(
@@ -25,9 +24,9 @@ def build_cover_letter_user_message(
 ) -> str:
     parts = [
         "Structured resume:\n\n",
-        _format_profile(profile),
+        format_profile(profile),
         "\n\nTarget job:\n\n",
-        _format_job(job),
+        format_job(job),
         "\n\nMatch analysis:\n\n",
         json.dumps(match_result.model_dump(), indent=2, ensure_ascii=False),
     ]
@@ -102,9 +101,3 @@ async def generate_cover_letter(
         transform_payload=normalize_cover_letter_result_payload,
     )
     return final
-
-
-def match_result_for_cover_letter(result: dict) -> MatchResult:
-    if result.get("depth") == "screen":
-        raise ValueError("Full match analysis required for cover letter generation")
-    return match_result_from_analysis_payload(result)

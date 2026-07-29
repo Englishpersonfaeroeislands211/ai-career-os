@@ -15,13 +15,6 @@ def test_load_match_analysis_prompt():
     assert "Never hallucinate" in prompt
 
 
-def test_load_batch_match_analysis_prompt():
-    prompt = load_prompt("batch_match_analysis")
-    assert "matches" in prompt
-    assert "job_id" in prompt
-    assert "Calibrate scores relatively" in prompt
-
-
 def test_load_batch_screen_match_prompt():
     prompt = load_prompt("batch_screen_match")
     assert "screening cards" in prompt.casefold()
@@ -41,7 +34,7 @@ def test_load_cover_letter_prompts():
 
 
 def test_load_company_research_prompts():
-    assert "queries" in load_prompt("company_research_plan")
+    assert "action" in load_prompt("company_research_agent")
     assert "search results" in load_prompt("company_research_synthesize").casefold()
 
 

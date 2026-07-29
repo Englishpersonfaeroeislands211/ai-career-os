@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.schemas.match_analysis import MatchResult
+from app.services.match import analyze_match, build_match_user_message
 from app.services.match_analysis_normalize import normalize_match_payload
-from app.services.matcher import analyze_match, build_match_user_message
 from tests.evals.eval_assertions import load_json
 from tests.evals.match_eval_assertions import evaluate_match_result
 
@@ -69,7 +69,7 @@ async def test_analyze_match_pipeline_with_mocked_llm(case_name: str, case_dir: 
     mock_client.generate_structured.return_value = golden
 
     with patch(
-        "app.services.matcher.get_llm_client",
+        "app.services.match.analyzer.get_llm_client",
         new=AsyncMock(return_value=mock_client),
     ):
         result = await analyze_match(db=None, profile=profile, job=job)

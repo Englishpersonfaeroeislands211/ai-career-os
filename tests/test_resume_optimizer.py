@@ -5,9 +5,9 @@ import pytest
 
 from app.schemas.match_analysis import MatchGap, MatchResult
 from app.schemas.resume_optimization import ResumeOptimizationResult, ResumeSuggestion
+from app.services.match import match_result_from_analysis_payload
 from app.services.resume_optimizer import (
     build_resume_optimization_user_message,
-    match_result_from_analysis_payload,
     optimize_resume_for_match,
 )
 from app.services.resume_suggestion_apply import apply_suggestions

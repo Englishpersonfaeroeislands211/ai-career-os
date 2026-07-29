@@ -1,0 +1,160 @@
+import asyncio
+from uuid import UUID
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_job_or_404
+from app.db.session import get_db
+from app.logging_config import get_logger
+from app.models import Job, MatchAnalysis, Profile
+from app.schemas import (
+    CompanyBrief,
+    JobCreate,
+    JobCreateRead,
+    JobParseRead,
+    JobParseRequest,
+    JobRead,
+    JobUpdate,
+)
+from app.services.company_research import company_brief_to_storage, research_company
+from app.services.job_paste_parser import JobPasteParseError, prepare_job_post_text
+from app.services.job_structurer import structure_job
+from app.services.llm.base import LLMConfigurationError, LLMError
+from app.services.match import run_progressive_match_analysis
+from app.services.screening_card import attach_screening_card_to_metadata
+from app.services.search.base import SearchError
+
+logger = get_logger(__name__)
+
+router = APIRouter(tags=["jobs"])
+
+
+@router.post("/jobs", response_model=JobCreateRead, status_code=status.HTTP_201_CREATED)
+async def create_job(
+    body: JobCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    profile_id = body.profile_id
+    payload = body.model_dump(exclude={"profile_id"})
+    job = Job(**payload)
+    db.add(job)
+    await db.flush()
+    job.raw_metadata = attach_screening_card_to_metadata(job.raw_metadata, job)
+
+    match_analysis_id: UUID | None = None
+    if profile_id:
+        profile = await db.get(Profile, profile_id)
+        if not profile:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        analysis = MatchAnalysis(
+            profile_id=profile_id,
+            job_id=job.id,
+            status="pending",
+        )
+        db.add(analysis)
+        await db.flush()
+        match_analysis_id = analysis.id
+
+    await db.commit()
+    await db.refresh(job)
+
+    if match_analysis_id:
+        background_tasks.add_task(run_progressive_match_analysis, match_analysis_id)
+        logger.info(
+            "Queued match analysis %s for new job %s profile=%s",
+            match_analysis_id,
+            job.id,
+            profile_id,
+        )
+
+    return JobCreateRead(
+        **JobRead.model_validate(job).model_dump(),
+        match_analysis_id=match_analysis_id,
+    )
+
+
+@router.get("/jobs", response_model=list[JobRead])
+async def list_jobs(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Job).order_by(Job.created_at.desc()))
+    return result.scalars().all()
+
+
+@router.post("/jobs/parse-text", response_model=JobParseRead)
+async def parse_job_text(body: JobParseRequest, db: AsyncSession = Depends(get_db)):
+    logger.info("Parsing pasted job posting (%d chars)", len(body.text))
+
+    try:
+        job_text = await asyncio.to_thread(prepare_job_post_text, body.text)
+    except JobPasteParseError as exc:
+        logger.warning("Job paste parse failed: %s", exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    logger.info("Structuring job posting (%d chars after normalize)", len(job_text))
+
+    try:
+        extraction = await structure_job(db, job_text)
+    except LLMConfigurationError as exc:
+        logger.warning("Job structuring skipped — provider not configured: %s", exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LLMError as exc:
+        logger.error("Job structuring failed: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    logger.info(
+        "Structured job posting — title=%r, company=%r, requirements=%d",
+        extraction.title,
+        extraction.company,
+        len(extraction.requirements),
+    )
+    return JobParseRead(job_text=job_text, structured_data=extraction)
+
+
+@router.get("/jobs/{job_id}", response_model=JobRead)
+async def get_job(job: Job = Depends(get_job_or_404)):
+    return job
+
+
+@router.patch("/jobs/{job_id}", response_model=JobRead)
+async def update_job(
+    body: JobUpdate,
+    job: Job = Depends(get_job_or_404),
+    db: AsyncSession = Depends(get_db),
+):
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(job, field, value)
+
+    job.raw_metadata = attach_screening_card_to_metadata(job.raw_metadata, job)
+    await db.commit()
+    await db.refresh(job)
+    return job
+
+
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(
+    job: Job = Depends(get_job_or_404),
+    db: AsyncSession = Depends(get_db),
+):
+    await db.delete(job)
+    await db.commit()
+
+
+@router.post("/jobs/{job_id}/company-research", response_model=CompanyBrief)
+async def create_company_research(
+    job: Job = Depends(get_job_or_404),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        brief = await research_company(db, job)
+    except SearchError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except (LLMConfigurationError, LLMError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    job.company_brief = company_brief_to_storage(brief)
+    await db.commit()
+    await db.refresh(job)
+    logger.info("Company research completed: job=%s company=%r", job.id, job.company)
+    return brief

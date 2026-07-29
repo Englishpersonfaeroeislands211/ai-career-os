@@ -11,7 +11,7 @@ from app.schemas.match_analysis import (
     MatchStrength,
     ScreeningJobMatchResult,
 )
-from app.services.matcher import run_progressive_match_analysis
+from app.services.match import run_progressive_match_analysis
 
 
 @pytest.mark.asyncio
@@ -70,15 +70,15 @@ async def test_run_progressive_match_analysis_screens_then_completes_full():
     mock_context.__aexit__.return_value = None
 
     with (
-        patch("app.services.matcher.async_session", return_value=mock_context),
+        patch("app.services.match.orchestrator.async_session", return_value=mock_context),
         patch(
-            "app.services.matcher.analyze_matches_screen",
+            "app.services.match.orchestrator.analyze_matches_screen",
             new=AsyncMock(
                 return_value=BatchScreeningResult(matches=[screen_match]),
             ),
         ),
         patch(
-            "app.services.matcher.analyze_match",
+            "app.services.match.orchestrator.analyze_match",
             new=AsyncMock(return_value=full_result),
         ),
     ):

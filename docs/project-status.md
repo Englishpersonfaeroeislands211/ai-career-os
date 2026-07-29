@@ -71,7 +71,7 @@ Interactive docs: http://127.0.0.1:8000/docs
 | Soon | Re-analyze on job update | JD edits should refresh match |
 | Soon | Tavily/Serper search in settings | Production-grade search |
 | Soon | Company brief → cover letter context | Richer outreach |
-| Cleanup | Prune unused batch/cascade backend | After evals cover primary paths |
+| Cleanup | Prune unused batch/cascade backend | Done (Phase 1 refactor) |
 
 ## Intentionally deferred
 

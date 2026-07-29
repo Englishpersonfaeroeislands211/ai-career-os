@@ -3,8 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.jobs import router as jobs_router
 from app.api.llm import router as llm_router
-from app.api.routes import router
+from app.api.match_analyses import router as match_analyses_router
+from app.api.profiles import router as profiles_router
 from app.api.settings import router as settings_router
 from app.config import settings
 from app.db.session import engine
@@ -31,7 +33,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(router, prefix="/api/v1")
+app.include_router(profiles_router, prefix="/api/v1")
+app.include_router(jobs_router, prefix="/api/v1")
+app.include_router(match_analyses_router, prefix="/api/v1")
 app.include_router(settings_router, prefix="/api/v1")
 app.include_router(llm_router, prefix="/api/v1")
 

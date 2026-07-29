@@ -14,13 +14,13 @@ from app.schemas.company_research import (
     SearchResult,
 )
 from app.services.llm import Message, get_llm_client
-from app.services.matcher import _format_job
+from app.services.match.formatters import format_job
 from app.services.search import SearchClient, get_search_client
 from app.services.search.tracing import AgentStepTrace, log_agent_step
 
 
 def _format_job_for_research(job: Job) -> str:
-    parts = [_format_job(job)]
+    parts = [format_job(job)]
     if job.url:
         parts.append(f"\nJob URL: {job.url}")
     return "\n".join(parts)
@@ -188,7 +188,3 @@ async def research_company(
 
 def company_brief_to_storage(brief: CompanyBrief) -> dict:
     return brief.model_dump(mode="json")
-
-
-def company_brief_from_payload(payload: dict) -> CompanyBrief:
-    return CompanyBrief.model_validate(payload)

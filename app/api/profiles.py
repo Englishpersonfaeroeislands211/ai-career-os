@@ -1,0 +1,173 @@
+import asyncio
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_profile_or_404
+from app.db.session import get_db
+from app.logging_config import get_logger
+from app.models import Profile
+from app.schemas import (
+    ApplyResumeSuggestionsRequest,
+    ProfileCreate,
+    ProfileRead,
+    ProfileUpdate,
+    ResumeParseRead,
+)
+from app.services.llm.base import LLMConfigurationError, LLMError
+from app.services.resume_parser import ResumeParseError, extract_text_from_pdf
+from app.services.resume_pdf_export import (
+    ResumePdfExportError,
+    build_profile_resume_pdf,
+    content_disposition_attachment,
+    resume_pdf_filename,
+)
+from app.services.resume_structurer import structure_resume
+from app.services.resume_suggestion_apply import apply_suggestions
+
+logger = get_logger(__name__)
+
+router = APIRouter(tags=["profiles"])
+
+
+@router.post("/profiles", response_model=ProfileRead, status_code=status.HTTP_201_CREATED)
+async def create_profile(body: ProfileCreate, db: AsyncSession = Depends(get_db)):
+    profile = Profile(**body.model_dump())
+    db.add(profile)
+    await db.commit()
+    await db.refresh(profile)
+    return profile
+
+
+@router.get("/profiles", response_model=list[ProfileRead])
+async def list_profiles(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Profile).order_by(Profile.created_at.desc()))
+    return result.scalars().all()
+
+
+@router.post("/profiles/parse-resume", response_model=ResumeParseRead)
+async def parse_resume(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    filename = file.filename or "upload.pdf"
+    content_type = file.content_type or "unknown"
+    logger.info("Parsing resume upload: %s (%s)", filename, content_type)
+
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    if not content.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="File does not appear to be a valid PDF")
+
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File must be under 10 MB")
+
+    logger.info("Extracting text from %s (%.1f KB)", filename, len(content) / 1024)
+
+    try:
+        resume_text = await asyncio.to_thread(extract_text_from_pdf, content)
+    except ResumeParseError as exc:
+        logger.warning("Resume parse failed for %s: %s", filename, exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    logger.info("Structuring resume from %s (%d chars)", filename, len(resume_text))
+
+    try:
+        extraction = await structure_resume(db, resume_text)
+    except LLMConfigurationError as exc:
+        logger.warning("Resume structuring skipped — provider not configured: %s", exc)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LLMError as exc:
+        logger.error("Resume structuring failed for %s: %s", filename, exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    logger.info(
+        "Structured %s — name=%r, skills=%d, experience=%d",
+        filename,
+        extraction.name,
+        len(extraction.skills),
+        len(extraction.experience),
+    )
+    return ResumeParseRead(
+        name=extraction.name,
+        headline=extraction.headline,
+        resume_text=resume_text,
+        structured_data=extraction,
+    )
+
+
+@router.get("/profiles/{profile_id}", response_model=ProfileRead)
+async def get_profile(profile: Profile = Depends(get_profile_or_404)):
+    return profile
+
+
+@router.get("/profiles/{profile_id}/resume.pdf")
+async def export_profile_resume_pdf(profile: Profile = Depends(get_profile_or_404)):
+    try:
+        pdf_bytes = build_profile_resume_pdf(profile)
+    except ResumePdfExportError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    filename = resume_pdf_filename(profile.name)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": content_disposition_attachment(filename)},
+    )
+
+
+@router.patch("/profiles/{profile_id}", response_model=ProfileRead)
+async def update_profile(
+    body: ProfileUpdate,
+    profile: Profile = Depends(get_profile_or_404),
+    db: AsyncSession = Depends(get_db),
+):
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(profile, field, value)
+
+    await db.commit()
+    await db.refresh(profile)
+    return profile
+
+
+@router.delete("/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_profile(
+    profile: Profile = Depends(get_profile_or_404),
+    db: AsyncSession = Depends(get_db),
+):
+    await db.delete(profile)
+    await db.commit()
+
+
+@router.post("/profiles/{profile_id}/apply-resume-suggestions", response_model=ProfileRead)
+async def apply_resume_suggestions(
+    body: ApplyResumeSuggestionsRequest,
+    profile: Profile = Depends(get_profile_or_404),
+    db: AsyncSession = Depends(get_db),
+):
+    resume_text, structured_data, headline = apply_suggestions(
+        profile.resume_text,
+        profile.structured_data,
+        profile.headline,
+        body.suggestions,
+    )
+    profile.resume_text = resume_text
+    profile.structured_data = structured_data
+    if headline is not None:
+        profile.headline = headline
+
+    await db.commit()
+    await db.refresh(profile)
+    logger.info(
+        "Applied %d resume suggestions to profile %s",
+        len(body.suggestions),
+        profile.id,
+    )
+    return profile
