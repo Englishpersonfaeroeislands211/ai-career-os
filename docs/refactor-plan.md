@@ -20,8 +20,8 @@ Incremental refactor to improve structure and test coverage without changing pro
 | **2 — Backend layering** | Done | Split API routers, `match/` package, schema layout |
 | **3 — Backend quality** | Done | Exception handlers, service-layer errors, httpx pooling |
 | **4 — Frontend structure** | Done | Hooks, RequireProfile layout, api.jobs.get, useJobDetail |
-| **5 — Types & observability** | Planned | OpenAPI typegen, optional request IDs |
-| **6 — Testing pyramid** | Ongoing | Expand API integration tests after route split |
+| **5 — Types & observability** | Done | OpenAPI export, typegen script, request ID middleware |
+| **6 — Testing pyramid** | Done | Expanded API integration tests per domain |
 
 ## Phase 0 deliverables
 

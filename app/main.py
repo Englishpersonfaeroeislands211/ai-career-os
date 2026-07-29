@@ -11,7 +11,12 @@ from app.api.profiles import router as profiles_router
 from app.api.settings import router as settings_router
 from app.config import settings
 from app.db.session import engine
-from app.logging_config import RequestLoggingMiddleware, get_logger, setup_logging
+from app.logging_config import (
+    RequestIdMiddleware,
+    RequestLoggingMiddleware,
+    get_logger,
+    setup_logging,
+)
 from app.services.http_client import close_http_client, init_http_client
 
 setup_logging()
@@ -31,6 +36,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 register_exception_handlers(app)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RequestIdMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
