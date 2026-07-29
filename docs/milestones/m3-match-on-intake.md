@@ -69,7 +69,7 @@ Manual re-analyze remains available:
 
 - [ ] Re-analyze automatically when job description is updated
 - [ ] Eval fixtures for match-at-intake golden path
-- [ ] Prune unused batch/cascade code in `matcher.py` / `batch_matcher.py`
+- [x] Prune unused batch/cascade code (removed in refactor Phase 1)
 
 ## Next
 

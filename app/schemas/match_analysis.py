@@ -23,16 +23,6 @@ class MatchResult(BaseModel):
     summary: str = Field(min_length=1)
 
 
-class JobMatchResult(MatchResult):
-    """Per-job match within a batch — includes job_id for mapping results."""
-
-    job_id: UUID
-
-
-class BatchMatchResult(BaseModel):
-    matches: list[JobMatchResult] = Field(min_length=1)
-
-
 class ScreeningJobMatchResult(BaseModel):
     job_id: UUID
     score: float = Field(ge=0, le=100)

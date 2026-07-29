@@ -41,7 +41,7 @@ Runs synchronously (like cover letter). Returns `CompanyBrief` and caches on the
 | `SearchResult` | Tool output — title, url, snippet |
 | `CompanyBrief` | API response — content + sources + `researched_at` |
 
-`ResearchPlan` remains in schema for reference; the product path uses the agent loop.
+The legacy plan-then-search path was removed; the product uses the bounded agent loop only.
 
 ## Product choices
 

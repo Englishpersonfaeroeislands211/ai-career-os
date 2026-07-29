@@ -117,20 +117,6 @@ def normalize_match_payload(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def normalize_batch_match_payload(data: dict[str, Any]) -> dict[str, Any]:
-    """Map batch LLM output onto BatchMatchResult."""
-    raw_matches = data.get("matches") or data.get("results") or data.get("job_matches") or []
-    matches: list[dict[str, Any]] = []
-    for item in raw_matches:
-        if not isinstance(item, dict):
-            continue
-        job_id = item.get("job_id")
-        if not job_id:
-            continue
-        matches.append({"job_id": job_id, **normalize_match_payload(item)})
-    return {"matches": matches}
-
-
 def normalize_screen_match_payload(data: dict[str, Any]) -> dict[str, Any]:
     """Map a single screening match onto ScreeningJobMatchResult fields."""
     score = data.get("score", data.get("match_score"))
