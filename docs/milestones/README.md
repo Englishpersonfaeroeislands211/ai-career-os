@@ -12,7 +12,7 @@ Incremental build plan. Each milestone adds one capability and is validated befo
 | 3 | [Match on job insert](m3-match-on-intake.md) | Background tasks, intake-time matching | **Done** |
 | 4 | [Resume optimization](m4-resume-optimization.md) | Reflection, iterative refinement | **Done** |
 | 5 | [Progressive match + cover letter](m5-progressive-match-cover-letter.md) | Staged inference, reflection chain | **Done** |
-| 6 | [Company research](m6-company-research.md) | Tool calling, web search | **Done** |
+| 6 | [Company research](m6-company-research.md) | Bounded agent loop, web search | **Done** |
 | 7 | Job discovery | Official APIs, user-provided data (no scraping) | **Next** |
 | 8 | Memory + feedback loop | Long-term memory, learning from feedback | Planned |
 | 9 | Interview preparation | Multi-step planning, structured curricula | Planned |

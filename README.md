@@ -5,7 +5,7 @@
 
 **An open-source AI operating system for career management** — starting with explainable job matching, not black-box auto-apply bots.
 
-Upload a resume PDF, extract structured profile data with an LLM you control, review it, paste job descriptions, and get **automatic explainable match analysis** — score, strengths, gaps, and evidence-backed recommendations.
+Upload a resume PDF, extract structured profile data with an LLM you control, review it, paste job descriptions through a **paste → review** wizard, and get **automatic explainable match analysis** — then research the company, tune your resume, and draft a cover letter from the job detail page.
 
 ---
 
@@ -48,16 +48,19 @@ Long-term vision: an autonomous career assistant that discovers jobs, explains f
 - **LLM structured extraction** — skills, experience, education, projects into a typed schema
 - **Bring your own model** — OpenAI, Anthropic, Groq, Mistral, Together, Azure OpenAI, or **local** (Ollama / LM Studio)
 - **Model picker** — fetches available models from your provider
-- **Human review** — edit extracted fields before saving
-- **Job paste intake** — LLM extracts title, company, requirements from pasted text
-- **Match on save** — full detailed analysis runs automatically when you add a job
+- **Human review** — edit extracted fields before saving (resume and job)
+- **Job intake wizard** — paste description → extract → review → save with automatic match
+- **Progressive match** — fast screen score while full analysis runs; strengths/gaps when complete
 - **Job pipeline** — home dashboard ranks jobs by match score with polling
-- **Explainable match analysis** — LLM compares profile ↔ job with score, strengths, gaps, and evidence
-- **Resume optimization** — gap-driven rewrite suggestions from job detail, apply to profile
-- **Export resume PDF** — download your profile as a formatted PDF from the profile page
+- **Job detail tabs** — match, company research, resume optimization, cover letter (after full analysis)
+- **Explainable match analysis** — score, strengths, gaps, and evidence-backed recommendations
+- **Company research** — bounded agent loop over web search → source-grounded brief
+- **Resume optimization** — gap-driven rewrite suggestions; apply to profile from job detail
+- **Cover letter** — 3-pass chain (draft → critique → revise), max 400 characters
+- **Export resume PDF** — download your profile as a formatted PDF
 - **Re-analyze** — manual retry on job detail when profile or job changes
 - **Version-controlled prompts** — prompts live in `app/prompts/`, not buried in code
-- **Eval harness** — golden fixtures for resume extraction and match analysis regression tests
+- **Eval harness** — six golden suites (resume, job, match, optimization, cover letter, research)
 
 ---
 
@@ -69,20 +72,23 @@ flowchart LR
     B --> C[LLM structured extraction]
     C --> D[Review and edit]
     D --> E[(Profile)]
-    F[Paste job] --> G[LLM job extraction]
-    G --> H[Save and analyze]
-    E --> H
-    H --> I[Full match analysis]
-    I --> J[Pipeline: ranked jobs + detail view]
+    F[Paste job description] --> G[LLM job extraction]
+    G --> H[Review fields]
+    H --> I[Save and analyze]
+    E --> I
+    I --> J[Screen then full match]
+    J --> K[Pipeline + job detail tabs]
+    K --> L[Research / Resume / Cover letter]
 ```
 
 1. **Extract text** from PDF (no LLM — fast, deterministic)
 2. **Structure** resume with your configured LLM (`ResumeExtraction`)
 3. **Review** on onboarding — fix anything the model got wrong
 4. **Save** profile with raw text + structured JSONB snapshot
-5. **Add a job** — paste JD → extract fields → **Save & analyze match**
-6. **Match runs in background** — full `MatchResult` (score 0–100, recommendation, strengths/gaps with evidence)
-7. **Home pipeline** — jobs ranked by score; job detail for deep dive or Re-analyze
+5. **Add a job** — paste description → extract → **review step** → save with `profile_id`
+6. **Progressive match** — screen score quickly, then full `MatchResult` in background
+7. **Job detail** — after full analysis: company research, resume tweaks, cover letter
+8. **Home pipeline** — jobs ranked by score; open any job for deep dive or re-analyze
 
 ---
 
@@ -153,8 +159,8 @@ App: http://127.0.0.1:5173
 2. Upload a PDF resume
 3. Wait for extraction (local models can take 30–60s)
 4. Review structured fields → save profile
-5. Add a job — paste description → **Save & analyze match**
-6. View ranked pipeline on home; open job detail for strengths, gaps, evidence
+5. Add a job — paste description → extract → review → **Save & analyze match**
+6. View ranked pipeline on home; open job detail for match, research, resume, cover letter
 
 > **Note:** Use `127.0.0.1` instead of `localhost` for API URLs on macOS — the Vite proxy and DB URL are configured this way to avoid IPv6 hangs.
 
@@ -209,7 +215,7 @@ Local models may return JSON with non-standard field names — the backend norma
 uv run pytest
 ```
 
-Eval fixtures live in `tests/evals/fixtures/` (resume extraction, job extraction, match analysis, resume optimization). CI runs golden-response checks on every push.
+Eval fixtures live in `tests/evals/fixtures/` — resume extraction, job extraction, match analysis, resume optimization, cover letter, and company research. CI runs golden-response checks on every push.
 
 ```bash
 # Offline golden evals (no API key)
@@ -265,17 +271,22 @@ ai-career-os/
 │   ├── db/               # SQLAlchemy session
 │   ├── models/           # ORM models
 │   ├── prompts/          # Version-controlled LLM prompts (.txt)
-│   ├── schemas/          # Pydantic models (API + ResumeExtraction + MatchResult)
+│   ├── schemas/          # Pydantic models (API + LLM outputs)
 │   └── services/
-│       ├── llm/          # Provider abstraction + generate_structured() client
+│       ├── llm/          # Provider abstraction + generate_structured()
+│       ├── search/       # Web search (DuckDuckGo) + tracing
 │       ├── resume_parser.py
 │       ├── resume_structurer.py
+│       ├── job_structurer.py
 │       ├── matcher.py
-│       └── match_analysis_normalize.py
-├── alembic/              # Database migrations (single init migration)
-├── frontend/             # Vite + React SPA
-├── docs/                 # Architecture, milestones, vision
-└── tests/
+│       ├── company_research.py
+│       ├── cover_letter_generator.py
+│       └── resume_optimizer.py
+├── alembic/              # Database migrations
+├── frontend/             # Vite + React SPA (sidebar nav, job wizard, detail tabs)
+├── docs/                 # Architecture, milestones, AI engineering guide
+├── scripts/run_evals.py  # Offline + live eval runner
+└── tests/evals/          # Golden fixtures + assertions
 ```
 
 ---
@@ -299,7 +310,7 @@ Base path: `/api/v1`
 | GET | `/jobs/{id}` | Get job |
 | PATCH | `/jobs/{id}` | Update job |
 | DELETE | `/jobs/{id}` | Delete job |
-| POST | `/jobs/{id}/company-research` | Plan → web search → company brief |
+| POST | `/jobs/{id}/company-research` | Agent loop → web search → company brief |
 | POST | `/match-analyses` | Manual re-analyze (background LLM matcher) |
 | POST | `/match-analyses/{id}/resume-optimization` | Gap-driven resume suggestions |
 | POST | `/match-analyses/{id}/cover-letter` | 3-pass cover letter generation |
@@ -324,8 +335,9 @@ Full interactive docs: http://127.0.0.1:8000/docs
 | **M3** Match on job insert | Done | Full analysis automatically when a job is saved |
 | **M4** Resume optimization | Done | Gap-driven suggestions with review before apply |
 | **M5** Progressive match + cover letter | Done | Fast screen at intake; 3-pass cover letter chain |
-| **M6** Company research | Done | Web search + source-grounded company brief |
+| **M6** Company research | Done | Bounded agent loop + web search + source-grounded brief |
 | **M7** Job discovery | **Next** | Official APIs for job feeds |
+| — | Planned | RAG for match evidence, Tavily/Serper search, brief → cover letter |
 
 Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/project-status.md](docs/project-status.md)
 
@@ -345,7 +357,9 @@ Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/p
 | [docs/vision.md](docs/vision.md) | Long-term product vision |
 | [docs/architecture.md](docs/architecture.md) | System design and data model |
 | [docs/project-status.md](docs/project-status.md) | Current state and what's next |
-| [docs/milestones/m3-match-on-intake.md](docs/milestones/m3-match-on-intake.md) | M3 spec (current product flow) |
+| [docs/milestones/m6-company-research.md](docs/milestones/m6-company-research.md) | M6 agent loop + company brief |
+| [docs/milestones/m5-progressive-match-cover-letter.md](docs/milestones/m5-progressive-match-cover-letter.md) | Progressive match + cover letter |
+| [docs/milestones/m3-match-on-intake.md](docs/milestones/m3-match-on-intake.md) | Match on job save |
 | [docs/milestones/README.md](docs/milestones/README.md) | Full roadmap |
 
 ---
@@ -356,7 +370,8 @@ Contributions welcome — especially around:
 
 - LLM provider adapters (Anthropic native structured output, Google Gemini)
 - Extraction and match quality — eval fixtures (sample resumes/jobs + expected fields)
-- Company research and cover letter (M5–M6)
+- RAG for match evidence (resume chunk retrieval per requirement)
+- Tavily/Serper as configurable search providers
 - Documentation and DX improvements
 
 ### Commit messages

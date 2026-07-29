@@ -1,12 +1,12 @@
 # Project Status
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 ## Where we are
 
-AI Career OS has a working **resume → job → explainable match → act** loop with **web-grounded company research**. The product is intentionally narrow: paste your data, get evidence-backed analysis — no black-box auto-apply.
+AI Career OS has a working **resume → job → explainable match → act** loop with **web-grounded company research** and a polished intake UX. The product is intentionally narrow: paste your data, get evidence-backed analysis — no black-box auto-apply.
 
-**Current milestone:** M6 complete. **Next:** M7 — job discovery.
+**Current milestone:** M6 complete (including bounded agent loop for company research). **Next:** M7 — job discovery, or RAG for match evidence (see roadmap discussion).
 
 ## Product flow (today)
 
@@ -15,19 +15,20 @@ flowchart LR
     A[Upload resume PDF] --> B[Review extraction]
     B --> C[(Profile)]
     C --> D[Paste job description]
-    D --> E[Extract job fields]
-    E --> F[Save and analyze match]
-    F --> G[Screen match shown quickly]
-    G --> H[Full MatchAnalysis completes]
-    H --> I[Home pipeline ranked by score]
-    H --> J[Job detail: match, research, resume, cover letter]
+    D --> E[Extract fields]
+    E --> F[Review and save]
+    F --> G[Progressive match]
+    G --> H[Job detail tabs]
+    H --> I[Research / Resume / Cover letter]
+    G --> J[Home pipeline ranked by score]
 ```
 
 1. **Onboarding** — PDF → LLM structured extraction → human review → save profile.
-2. **Add job** — paste JD → extract fields → **Save & analyze match** (sends `profile_id`).
-3. **Progressive match** — fast screen result while pending; full strengths/gaps when complete.
-4. **Job detail** — company research (plan → search → synthesize), resume optimization, cover letter.
-5. **Home pipeline** — jobs ranked by match score.
+2. **Add job** — paste → extract → **review step** → save with automatic match (`profile_id`).
+3. **Progressive match** — fast screen score while pending; full strengths/gaps when complete.
+4. **Job detail** — tabbed tools after full analysis: match, company research, resume optimization, cover letter.
+5. **Company research** — bounded agent loop (search or synthesize) → DuckDuckGo → source-grounded brief.
+6. **Home pipeline** — jobs ranked by match score with live polling.
 
 ## Implemented
 
@@ -35,15 +36,17 @@ flowchart LR
 |------|--------|
 | Resume PDF extraction + structured `ResumeExtraction` | Done |
 | Profile CRUD + settings (BYOM: cloud + local) | Done |
-| Job paste → `JobExtraction` + review UI | Done |
+| Job intake wizard (paste → review → save) | Done |
 | Explainable match + match on job insert | Done |
 | Progressive match (screen → full at intake) | Done |
+| Job detail tabs (match / research / resume / cover letter) | Done |
 | Resume optimization (gap → suggestions → apply) | Done |
 | Cover letter (draft → critique → revise, max 400 chars) | Done |
-| Company research (plan → web search → brief + sources) | Done |
+| Company research (bounded agent + web search + brief) | Done |
+| Light-theme UI, sidebar nav, AI loading states | Done |
 | Home job pipeline with polling | Done |
 | Eval harness (6 suites) | Done |
-| LLM + tool call tracing | Done |
+| LLM + tool + agent step tracing | Done |
 | Screening card + `match_summary` at job extract | Done |
 
 ## API surface (`/api/v1/`)
@@ -52,7 +55,7 @@ flowchart LR
 |----------|----------------|
 | Profiles | CRUD, `POST /profiles/parse-resume`, `GET /profiles/{id}/resume.pdf` |
 | Jobs | CRUD, `POST /jobs/parse-text`, `POST /jobs` (progressive match), `POST /jobs/{id}/company-research` |
-| Match analyses | `POST /match-analyses` (manual full re-analyze), list, get |
+| Match analyses | `POST /match-analyses` (manual re-analyze), list, get |
 | Match actions | `POST /match-analyses/{id}/resume-optimization`, `POST /match-analyses/{id}/cover-letter` |
 | Settings | GET/PUT LLM provider config |
 | LLM | `POST /llm/models` |
@@ -64,6 +67,7 @@ Interactive docs: http://127.0.0.1:8000/docs
 | Priority | Milestone | Why |
 |----------|-----------|-----|
 | **Next** | [M7 — Job discovery](milestones/README.md) | Official APIs for job feeds |
+| Soon | RAG for match evidence | Retrieve resume chunks per requirement when context grows |
 | Soon | Re-analyze on job update | JD edits should refresh match |
 | Soon | Tavily/Serper search in settings | Production-grade search |
 | Soon | Company brief → cover letter context | Richer outreach |
@@ -72,8 +76,8 @@ Interactive docs: http://127.0.0.1:8000/docs
 ## Intentionally deferred
 
 - Authentication (single-user local dev)
-- Vector DB / RAG (resume + JD fit in context today)
-- Agent frameworks (orchestrated tool loops only)
+- Vector DB / RAG at scale (resume + JD still fit in context for most cases)
+- Agent frameworks (LangChain, ReAct) — bounded Python loops only
 - Auto-apply
 
 ## References

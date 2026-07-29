@@ -103,6 +103,7 @@ Job
 ├── title, company, description
 ├── location, url, source
 ├── raw_metadata: JSONB       # JobExtraction fields, screening_card, requirements
+├── company_brief: JSONB      # CompanyBrief snapshot (optional)
 ├── created_at, updated_at
 ```
 
@@ -130,7 +131,11 @@ Every analysis is persisted and auditable. This becomes the eval dataset.
 | `resume_structurer.py` | PDF text → `ResumeExtraction` |
 | `job_structurer.py` | Paste → `JobExtraction` |
 | `screening_card.py` | Compress job context for metadata |
-| `matcher.py` | Profile + Job → `MatchResult` (primary path: `run_match_analysis`) |
+| `matcher.py` | Profile + Job → `MatchResult` (progressive: screen → full) |
+| `company_research.py` | Bounded agent loop → web search → `CompanyBrief` |
+| `cover_letter_generator.py` | 3-pass cover letter chain |
+| `resume_optimizer.py` | Gap-driven resume suggestions |
+| `search/` | `SearchClient` protocol + DuckDuckGo adapter |
 | `llm/` | Provider-agnostic structured output client |
 
 **Note:** `matcher.py` also contains batch/cascade helpers from an archived experiment. They are not exposed via API.
@@ -167,7 +172,7 @@ Not just a computed field. Every analysis is:
 
 | Temptation | Why wait |
 |-----------|----------|
-| Agent framework (LangChain, etc.) | Don't know tool boundaries yet |
+| Agent framework (LangChain, etc.) | Bounded loops in Python suffice for research |
 | Vector DB / RAG | Resume + JD fit in context; RAG solves retrieval-at-scale |
 | Multi-agent orchestration | One well-evaluated pipeline beats five agents |
 | Fine-tuning | Prompt + structure gets you 90% there |

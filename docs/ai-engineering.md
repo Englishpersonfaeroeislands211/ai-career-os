@@ -142,13 +142,14 @@ This gives you latency, payload size, and token usage (when the provider returns
 
 ## Tool call tracing
 
-Web search runs outside the LLM client. Each search logs:
+Web search and agent steps log separately from LLM calls:
 
 ```
+agent_step | step=1/5 action=search query="FinTech Labs culture" rationale="..."
 tool_call | operation=web_search provider=duckduckgo query="FinTech Labs culture" latency_ms=842 results=5 status=ok
 ```
 
-Implementation: `app/services/search/tracing.py`, wired in `app/services/search/duckduckgo.py`.
+Implementation: `app/services/search/tracing.py`, wired in `duckduckgo.py` and `company_research.py`.
 
 Company research is a **bounded agent loop** — decide (LLM) → search (tool) → repeat or synthesize (LLM) — max 5 steps / 5 searches, not an open ReAct framework.
 
@@ -160,7 +161,7 @@ What goes into the prompt matters more than clever phrasing:
 - **Job extraction** — normalized paste text from `job_paste_parser.py` (HTML → plain text locally).
 - **Resume optimization** — resume + job + match gaps + summary so suggestions target measured weaknesses.
 - **Cover letter chain** — draft → critique → revise; each pass gets full profile, job, and match context.
-- **Company research** — job context → planned queries → search snippets only in synthesize prompt; URLs attached in code.
+- **Company research** — job context → agent loop (search or synthesize) → snippets only in synthesize prompt; URLs attached in code.
 - **Screening cards** — compressed `match_summary` at job intake for fast progressive match at save time.
 
 ## What we deliberately avoid
@@ -168,7 +169,7 @@ What goes into the prompt matters more than clever phrasing:
 | Pattern | Why not yet |
 |---------|-------------|
 | RAG / vector DB | Resume + JD fit in context at current scale |
-| Agent frameworks | Orchestrated tool loops only; no LangChain/ReAct |
+| Agent frameworks (LangChain, ReAct) | Bounded Python loops only; no framework |
 | Batch comparative matching (product) | Match-on-insert fits real workflow; batch code kept for experiments |
 | Auto-apply | Human approval required for career decisions |
 

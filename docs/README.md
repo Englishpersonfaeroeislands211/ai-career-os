@@ -7,21 +7,26 @@ Documentation for the AI Career OS project — an open-source, explainable AI ca
 | Document | Description |
 |----------|-------------|
 | [Project status](project-status.md) | **Current state, product flow, what's next** |
-| [AI engineering](ai-engineering.md) | **Evals, tracing, structured outputs — portfolio guide** |
+| [AI engineering](ai-engineering.md) | **Evals, tracing, structured outputs, agent loops** |
 | [Vision](vision.md) | Long-term product direction |
 | [Architecture](architecture.md) | System design and data model |
 | [Milestones](milestones/README.md) | Incremental build plan |
 
-## Current status (2026-07-28)
+## Current status (2026-07-29)
 
-**M4 — Resume optimization** is complete.
+**M6 — Company research** is complete, including a **bounded agent loop** for iterative web search.
 
-- [x] M0 — Resume extraction
-- [x] M1 — Explain the match
-- [x] M2 — Job structuring from paste
-- [x] M3 — Automatic full match when a job is saved
-- [x] M4 — Resume suggestions from match gaps
+| Milestone | Status |
+|-----------|--------|
+| M0 Resume extraction | Done |
+| M1 Explain the match | Done |
+| M2 Job structuring from paste | Done |
+| M3 Match on job insert | Done |
+| M4 Resume optimization | Done |
+| M5 Progressive match + cover letter | Done |
+| M6 Company research | Done |
+| M7 Job discovery | **Next** |
 
-**Next:** M5 — Cover letter generation.
+Recent UX: job intake wizard (paste → review), tabbed job detail, light theme, sidebar with prominent **Add job**.
 
-See [project-status.md](project-status.md) for the full picture including pivot notes.
+See [project-status.md](project-status.md) for the full picture.
