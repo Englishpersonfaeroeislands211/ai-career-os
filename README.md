@@ -391,7 +391,7 @@ Please do not commit `.env` files or API keys.
 |----------|-------------|
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to set up, test, and submit changes |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards (Contributor Covenant) |
-| [SECURITY.md](SECURITY.md) | How to report vulnerabilities privately |
+| [SECURITY.md](.github/SECURITY.md) | How to report vulnerabilities privately |
 | [Issue templates](.github/ISSUE_TEMPLATE/) | Bug reports and feature requests |
 | [PR template](.github/pull_request_template.md) | Pull request checklist |
 

@@ -96,8 +96,8 @@ fix(api): poll match analysis until terminal status
 
 - **Never commit** `.env`, API keys, or real resume/job data with PII.
 - Use `.env.example` for documented variables only.
-- If you find a security issue, follow [SECURITY.md](SECURITY.md) — do not open a
-  public issue.
+- If you find a security issue, follow [SECURITY.md](.github/SECURITY.md) — do not
+  open a public issue.
 
 ## Code of conduct
 

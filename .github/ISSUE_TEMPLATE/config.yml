@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/semirturgay/ai-career-os/discussions
     about: Ask questions or brainstorm ideas (enable Discussions in repo settings if unavailable)
   - name: Security vulnerability
-    url: https://github.com/semirturgay/ai-career-os/security/advisories/new
+    url: https://github.com/semirturgay/ai-career-os/blob/main/.github/SECURITY.md
     about: Report security issues privately — do not use public issues
